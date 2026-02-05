@@ -1,0 +1,2 @@
+stations_flegrei_INGV_flat_response_from_mseed.xml: works for synthetic data
+stations_flegrei_INGV_flat_response.xml: works for recorded data
