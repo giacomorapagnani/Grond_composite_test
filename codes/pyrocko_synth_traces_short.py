@@ -52,7 +52,7 @@ for s in stations:
         print(f'Error: event {e_name} not found in {catname_VLP}')
 
     # Synth
-    store_id = 'campiflegrei_near_0_dist_long'          ###CHANGE###
+    store_id = 'campiflegrei_near_0_dist'               ###CHANGE###
 
     engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
@@ -85,76 +85,69 @@ for s in stations:
     response_VLP = engine.process(source_mt_VLP, targets_VLP)
 
     # list of the requested traces:
-    synthetic_traces_VT = response_VT.pyrocko_traces()
-    synthetic_traces_VLP = response_VLP.pyrocko_traces()
+    synth_tr_VT = response_VT.pyrocko_traces()
+    synth_tr_VLP = response_VLP.pyrocko_traces()
 
-    #trace.snuffle(synthetic_traces_VLP)
-
-    a=synthetic_traces_VT[0].tmax-synthetic_traces_VT[0].tmin
-    b=synthetic_traces_VLP[0].tmax-synthetic_traces_VLP[0].tmin
-    print(f'BEFORE\nlenght of VT:{a}s\nlengthof VLP: {b}')
-    # chop heads and tails
-    trs_VT= [ x.chop(x.tmin+1,x.tmax-1) for x in synthetic_traces_VT ]
-    trs_VLP= [ x.chop(x.tmin+1,x.tmax-1) for x in synthetic_traces_VLP ]
-    # add longer heads and tails
-    tlen = 180.
-    newtrs_VT = []
-    for tr in trs_VT:
-        newtr = tr.copy()
-        ydata = newtr.get_ydata()
-        ydata= ydata - np.mean(ydata)
-        first, last = ydata[0], ydata[-1]
-        npts = int(tlen/newtr.deltat)
-        ydata = np.concatenate( (np.ones(npts) * first, ydata, np.ones(npts) * last) )
-        newtr.ydata = ydata
-        newtr.shift(-tlen)
-        newtr.tmax+= 2* tlen
-        newtrs_VT.append(newtr)
-
-    tlen = 240.
-    newtrs_VLP = []
-    for tr in trs_VLP:
-        newtr = tr.copy()
-        ydata = newtr.get_ydata()
-        # de-mean or better filtering?
-        ydata= ydata - np.mean(ydata)
-        first, last = ydata[0], ydata[-1]
-        npts = int(tlen/newtr.deltat)
-        ydata = np.concatenate( (np.ones(npts) * first, ydata, np.ones(npts) * last) )
-        newtr.ydata = ydata
-        newtr.shift(-tlen)
-        newtr.tmax+= 2* tlen
-        newtrs_VLP.append(newtr)
+    # calculate lenght
+    a=synth_tr_VT[0].tmax-synth_tr_VT[0].tmin
+    b=synth_tr_VLP[0].tmax-synth_tr_VLP[0].tmin
+    print(f'\nlenght of VT:{a}s\nlength of VLP: {b}')
     
-    a=newtrs_VT[0].tmax-newtrs_VT[0].tmin
-    b=newtrs_VLP[0].tmax-newtrs_VLP[0].tmin
-    print(f'AFTER\nlenght of VT:{a}s\nlengthof VLP: {b}')
-
+    # cut first and last element
+    #trs_VT= [ x.chop(x.tmin+1,x.tmax-1) for x in synthetic_traces_VT ]
+    #trs_VLP= [ x.chop(x.tmin+1,x.tmax-1) for x in synthetic_traces_VLP ]
+    # add longer heads and tails
+    
     # sum VLP and VT traces
     trs_sum = []
     channels=['HHE','HHN','HHZ']
     for n,ch in enumerate(channels):
-        dt=newtrs_VLP[n].deltat
-        tmin = newtrs_VLP[n].tmin
-        tshift= int( (newtrs_VT[n].tmin - newtrs_VLP[n].tmin) / dt )
-        len_tr_VT= len (newtrs_VT[n].get_ydata())
-        tr1=newtrs_VLP[n].get_ydata()
-        tr2=newtrs_VT[n].get_ydata()
-        trsum=tr1.copy()
-        trsum[tshift:tshift+len_tr_VT] += tr2
+        # dt
+        dt=synth_tr_VLP[n].deltat
+        # tmin
+        tmin_vlp = synth_tr_VLP[n].tmin
+        tmin_vt  = synth_tr_VT[n].tmin
+        if tmin_vlp <= tmin_vt:
+            tmin = tmin_vlp
+            # shift between tmin VLP & VT
+            tshift= int( (tmin_vt - tmin_vlp) / dt )
+
+            tr1=synth_tr_VLP[n].get_ydata()
+            tr2=synth_tr_VT[n].get_ydata()
+            trsum=tr1.copy()
+
+            len_tr_VT= len (tr2)
+            trsum[tshift:tshift+len_tr_VT] += tr2
+        else: 
+            tmin=tmin_vt
+        
+            tshift= int( round( ( tmin_vlp - tmin_vt) / dt ) )
+
+            tr1=synth_tr_VLP[n].get_ydata() # tr1=vlp
+            tr2=synth_tr_VT[n].get_ydata() # tr2=vt
+
+            # trace's first part
+            trsum=tr2[:tshift].copy()
+            # traces' second part (shared)
+            lenght_shared_tr=len(tr2)-tshift
+            tmp=tr2[tshift:].copy() + tr1[0:lenght_shared_tr].copy()
+            trsum=np.concatenate( (trsum,tmp) )
+            # trace's third part
+            trsum=np.concatenate( (trsum,tr1[lenght_shared_tr:].copy()) )
+            print(f'trs_sum len: {len(trsum)}, tr1 len: {len(tr1)}, tshift: {tshift}')
+
         trs_sum.append(trace.Trace(
                     network='IV', station=st.station, channel=ch,location='', deltat=dt, tmin=tmin, ydata=trsum))
 
-    #trs.extend(trs_VT)     # non chopped
-    #trs.extend(trs_VLP)    # non chopped
-    trs_VT_synth.extend(newtrs_VT)   # chopped
-    trs_VLP_synth.extend(newtrs_VLP)  # chopped
+        
+    trs_VT_synth.extend(synth_tr_VT)   
+    trs_VLP_synth.extend(synth_tr_VLP) 
     trs_VT_VLP_synth.extend(trs_sum)     # sum
 
 # snuffler
-trace.snuffle(trs_VLP)
+#trace.snuffle(trs_VLP_synth)
 
 # save synth traces (watch out for the 'location' parameter: max 2 letters)
-#io.save(trs_VT_synth, '../DATA/VT_flegrei_2023_06_11_06_44_25/VT_2_flegrei_2023_06_11_06_44_25.mseed')
-#io.save(trs_VLP_synth, '../DATA/VLP_flegrei_2023_06_11_06_44_25/VLP_2_flegrei_2023_06_11_06_44_25.mseed')
-#io.save(trs_VT_VLP_synth, '../DATA/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_2_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_synth, '../DATA_2/VT_flegrei_2023_06_11_06_44_25/VT_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VLP_synth, '../DATA_2/VLP_flegrei_2023_06_11_06_44_25/VLP_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_VLP_synth, '../DATA_2/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_flegrei_2023_06_11_06_44_25.mseed')
