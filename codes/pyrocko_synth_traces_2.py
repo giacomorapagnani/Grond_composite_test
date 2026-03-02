@@ -52,7 +52,7 @@ for s in stations:
         print(f'Error: event {e_name} not found in {catname_VLP}')
 
     # Synth
-    store_id = 'campiflegrei_near'
+    store_id = 'campiflegrei_near_0_dist'
 
     engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
@@ -100,27 +100,39 @@ for s in stations:
     for tr in trs_VT:
         newtr = tr.copy()
         ydata = newtr.get_ydata()
+        # de-mean
         ydata= ydata - np.mean(ydata)
+        # head and tail values
         first, last = ydata[0], ydata[-1]
         npts = int(tlen/newtr.deltat)
+        # add head and tail
         ydata = np.concatenate( (np.ones(npts) * first, ydata, np.ones(npts) * last) )
         newtr.ydata = ydata
+        # adjust origin time
         newtr.shift(-tlen)
         newtr.tmax+= 2* tlen
+        # add to list
         newtrs_VT.append(newtr)
 
     tlen = 240.
     newtrs_VLP = []
     for tr in trs_VLP:
         newtr = tr.copy()
+        # filter
+        #newtr.GaussT
         ydata = newtr.get_ydata()
+        # de-mean
         ydata= ydata - np.mean(ydata)
+        # head and tail values
         first, last = ydata[0], ydata[-1]
         npts = int(tlen/newtr.deltat)
+        # add head and tail
         ydata = np.concatenate( (np.ones(npts) * first, ydata, np.ones(npts) * last) )
         newtr.ydata = ydata
+        # adjust origin time
         newtr.shift(-tlen)
         newtr.tmax+= 2* tlen
+        # add to list
         newtrs_VLP.append(newtr)
     
     a=newtrs_VT[0].tmax-newtrs_VT[0].tmin
@@ -133,6 +145,7 @@ for s in stations:
     for n,ch in enumerate(channels):
         dt=newtrs_VLP[n].deltat
         tmin = newtrs_VLP[n].tmin
+        # shift between tmin VLP & VT
         tshift= int( (newtrs_VT[n].tmin - newtrs_VLP[n].tmin) / dt )
         len_tr_VT= len (newtrs_VT[n].get_ydata())
         tr1=newtrs_VLP[n].get_ydata()
@@ -152,6 +165,6 @@ for s in stations:
 trace.snuffle(trs_VLP_synth)
 
 # save synth traces (watch out for the 'location' parameter: max 2 letters)
-io.save(trs_VT_synth, '../DATA_synth/VT_flegrei_2023_06_11_06_44_25/VT_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VLP_synth, '../DATA_synth/VLP_flegrei_2023_06_11_06_44_25/VLP_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VT_VLP_synth, '../DATA_synth/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_flegrei_2023_06_11_06_44_25.mseed')
+#io.save(trs_VT_synth, '../DATA_synth/VT_flegrei_2023_06_11_06_44_25/VT_2_flegrei_2023_06_11_06_44_25.mseed')
+#io.save(trs_VLP_synth, '../DATA_synth/VLP_flegrei_2023_06_11_06_44_25/VLP_2_flegrei_2023_06_11_06_44_25.mseed')
+#io.save(trs_VT_VLP_synth, '../DATA_synth/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_2_flegrei_2023_06_11_06_44_25.mseed')

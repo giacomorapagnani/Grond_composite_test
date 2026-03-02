@@ -52,7 +52,7 @@ for s in stations:
         print(f'Error: event {e_name} not found in {catname_VLP}')
 
     # Synth
-    store_id = 'campiflegrei_near'
+    store_id = 'campiflegrei_near_0_dist_long'
 
     engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
@@ -87,6 +87,8 @@ for s in stations:
     # list of the requested traces:
     synthetic_traces_VT = response_VT.pyrocko_traces()
     synthetic_traces_VLP = response_VLP.pyrocko_traces()
+
+    #trace.snuffle(synthetic_traces_VLP)
 
     a=synthetic_traces_VT[0].tmax-synthetic_traces_VT[0].tmin
     b=synthetic_traces_VLP[0].tmax-synthetic_traces_VLP[0].tmin
@@ -149,9 +151,9 @@ for s in stations:
     trs_VT_VLP_synth.extend(trs_sum)     # sum
 
 # snuffler
-trace.snuffle(trs_VLP_synth)
+#trace.snuffle(trs_VLP)
 
 # save synth traces (watch out for the 'location' parameter: max 2 letters)
-io.save(trs_VT_synth, '../DATA_synth/VT_flegrei_2023_06_11_06_44_25/VT_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VLP_synth, '../DATA_synth/VLP_flegrei_2023_06_11_06_44_25/VLP_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VT_VLP_synth, '../DATA_synth/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_flegrei_2023_06_11_06_44_25.mseed')
+#io.save(trs_VT_synth, '../DATA/VT_flegrei_2023_06_11_06_44_25/VT_2_flegrei_2023_06_11_06_44_25.mseed')
+#io.save(trs_VLP_synth, '../DATA/VLP_flegrei_2023_06_11_06_44_25/VLP_2_flegrei_2023_06_11_06_44_25.mseed')
+#io.save(trs_VT_VLP_synth, '../DATA/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_2_flegrei_2023_06_11_06_44_25.mseed')
