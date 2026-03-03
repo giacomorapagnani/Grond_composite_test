@@ -32,7 +32,7 @@ trs_VT_VLP_synth=[]
 # Select station
 for s in stations:
     st=s
-    print('synt at station:',st.station)
+    print('\nSynthetic traces for station:',st.station)
     
     # Select event
     e_name='flegrei_2023_06_11_06_44_25'
@@ -52,7 +52,7 @@ for s in stations:
         print(f'Error: event {e_name} not found in {catname_VLP}')
 
     # Synth
-    store_id = 'campiflegrei_near_0_dist_long'          ###CHANGE###
+    store_id = 'campiflegrei_near_0_dist_long_2'          ###CHANGE###
 
     engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
