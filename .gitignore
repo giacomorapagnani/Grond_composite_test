@@ -2,6 +2,7 @@ report/*
 runs/*
 GF_STORES/*
 DATA/*
+DATA_test/*
 DATA_2/*
 .github/*
 .vscode/*

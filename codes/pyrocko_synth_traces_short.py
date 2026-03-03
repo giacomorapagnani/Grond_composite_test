@@ -18,7 +18,7 @@ metadatadir='../META_DATA'
 stations_name=os.path.join(metadatadir,'stations_flegrei_INGV_final.pf')
 stations=model.load_stations(stations_name)
 
-catname_VLP=os.path.join(catdir,'catalogue_flegrei_VLP_same_hypo.pf')
+catname_VLP=os.path.join(catdir,'catalogue_flegrei_VLP.pf')
 events_VLP = model.load_events(catname_VLP)
 
 catname_VT=os.path.join(catdir,'catalogue_flegrei_VT.pf')
@@ -149,6 +149,6 @@ for s in stations:
 #trace.snuffle(trs_VLP_synth)
 
 # save synth traces (watch out for the 'location' parameter: max 2 letters)
-io.save(trs_VT_synth, '../DATA_2/VT_flegrei_2023_06_11_06_44_25/VT_3_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VLP_synth, '../DATA_2/VLP_flegrei_2023_06_11_06_44_25/VLP_3_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VT_VLP_synth, '../DATA_2/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_3_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_synth, '../DATA/VT_flegrei_2023_06_11_06_44_25/VT_short_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VLP_synth, '../DATA/VLP_flegrei_2023_06_11_06_44_25/VLP_short_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_VLP_synth, '../DATA/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_short_flegrei_2023_06_11_06_44_25.mseed')
