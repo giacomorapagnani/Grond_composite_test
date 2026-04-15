@@ -52,7 +52,7 @@ if not ev_VLP:
     print(f'Error: event {e_name} not found in {catname_VLP}')
 
 # Synth
-store_id = 'campiflegrei_near_0_dist'
+store_id = 'campiflegrei_short_homogeneous_2'               ###CHANGE###
 
 engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
@@ -78,7 +78,7 @@ targets_VLP = [
 source_mt_VT = MTSource.from_pyrocko_event(ev_VT)
 
 source_mt_VLP = MTSource.from_pyrocko_event(ev_VLP)
-source_mt_VLP.stf=gf.ResonatorSTF(30., frequency=0.114)
+source_mt_VLP.stf=gf.ResonatorSTF(15., frequency=0.114)
 
 # return a pyrocko.gf.Reponse object.
 response_VT = engine.process(source_mt_VT, targets_VT)
@@ -139,7 +139,7 @@ for n,ch in enumerate(channels):
 #io.save(trs, '../DATA_synth/synth_traces.mseed')
 
 # load observed traces
-datadir='../observed DATA (instrumental response removed)'
+datadir='../DATA_RESPONSE'
 dir_name=os.path.join(datadir,e_name)
 file_name=os.path.join(dir_name,e_name+'.mseed')
 obs_trs_all = io.load(file_name)
