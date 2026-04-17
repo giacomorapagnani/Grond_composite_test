@@ -1,6 +1,11 @@
 # COMPARE SYNTHETIC TRACES (GENERATED FROM VT AND VLP SOLUTIONS)
 # WITH THE OBSERVED TRACES (FILTERED AT 2 DIFFERENT FREQUENCY BANDS)
 
+
+################################################################################
+############ something is wrong with amplitudes of synth VT traces ############
+################################################################################
+
 # libs
 import os
 
@@ -26,7 +31,7 @@ catname_VT=os.path.join(catdir,'catalogue_flegrei_VT.pf')
 events_VT = model.load_events(catname_VT)
 
 # Select station
-s_name='CPOZ'                           #CHANGE
+s_name='CBAC'                           #CHANGE
 st=False
 for s in stations:
     if s.station==s_name:
@@ -52,7 +57,7 @@ if not ev_VLP:
     print(f'Error: event {e_name} not found in {catname_VLP}')
 
 # Synth
-store_id = 'campiflegrei_short_homogeneous_2'               ###CHANGE###
+store_id = 'campiflegrei_near_0_dist'               ###CHANGE###
 
 engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
@@ -70,7 +75,7 @@ targets_VLP = [
         lat=st.lat,
         lon=st.lon,
         store_id=store_id,
-        codes=('', st.station, 'VLP', channel_code))
+        codes=('', st.station, 'LP', channel_code))
     for channel_code in channel_codes]
 
 # MT source representation.
@@ -78,7 +83,7 @@ targets_VLP = [
 source_mt_VT = MTSource.from_pyrocko_event(ev_VT)
 
 source_mt_VLP = MTSource.from_pyrocko_event(ev_VLP)
-source_mt_VLP.stf=gf.ResonatorSTF(15., frequency=0.114)
+source_mt_VLP.stf=gf.ResonatorSTF(25., frequency=0.114)
 
 # return a pyrocko.gf.Reponse object.
 response_VT = engine.process(source_mt_VT, targets_VT)
@@ -132,11 +137,13 @@ for n,ch in enumerate(channels):
     trsum=tr1.copy()
     trsum[tshift:tshift+len_tr_VT] += tr2
     trs_sum.append(trace.Trace(
-                station=s_name, channel=ch,location='VLP + VT', deltat=dt, tmin=tmin, ydata=trsum))
+                station=s_name, channel=ch,location='AL', deltat=dt, tmin=tmin, ydata=trsum))
 
 
 # save synth traces (watch out for the 'location' parameter: max 2 letters)
-#io.save(trs, '../DATA_synth/synth_traces.mseed')
+#io.save(newtrs_VT, '../DATA/test/vt.mseed')
+#io.save(newtrs_VLP, '../DATA/test/vlp.mseed')
+#io.save(trs_sum, '../DATA/test/vt+vlp.mseed')
 
 # load observed traces
 datadir='../DATA_RESPONSE'
@@ -163,7 +170,7 @@ trs.extend(obs_trs)     # obs
 colors=['#BD2025','#FFCC4E','#FF7400','#64DC89']    # red, yellow, orange, green
 freq_ranges= [ [0.5,2],[0.075,0.125] ]
 # y limits
-ylims= [ 8.e-5 , 5.e-6 ]  # VT, VLP range          # reference : flegrei_2023_06_11_06_44_25
+ylims= [ 3.5e-4 , 5.e-6 ]  # VT, VLP range          # reference : flegrei_2023_06_11_06_44_25
 
 trs_mseed=[]
 for l,fq in enumerate(freq_ranges):

@@ -15,13 +15,13 @@ import datetime
 catdir='../CAT'
 metadatadir='../META_DATA'
 
-stations_name=os.path.join(metadatadir,'stations_flegrei_INGV_final.pf')
+stations_name=os.path.join(metadatadir,'stations_flegrei_INGV_final.pf')               ###CHANGE###
 stations=model.load_stations(stations_name)
 
-catname_VLP=os.path.join(catdir,'catalogue_flegrei_VLP_iso.pf')
+catname_VLP=os.path.join(catdir,'catalogue_flegrei_VLP.pf')               ###CHANGE###
 events_VLP = model.load_events(catname_VLP)
 
-catname_VT=os.path.join(catdir,'catalogue_flegrei_VT_iso.pf')
+catname_VT=os.path.join(catdir,'catalogue_flegrei_VT.pf')               ###CHANGE###
 events_VT = model.load_events(catname_VT)
 
 # Create trace list with all traces
@@ -52,7 +52,7 @@ for s in stations:
         print(f'Error: event {e_name} not found in {catname_VLP}')
 
     # Synth
-    store_id = 'campiflegrei_short_homogeneous_2'               ###CHANGE###
+    store_id = 'campiflegrei_near_0_dist'          ###CHANGE###
 
     engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
@@ -78,7 +78,7 @@ for s in stations:
     source_mt_VT = MTSource.from_pyrocko_event(ev_VT)
 
     source_mt_VLP = MTSource.from_pyrocko_event(ev_VLP)
-    source_mt_VLP.stf=gf.ResonatorSTF(30., frequency=0.114)
+    source_mt_VLP.stf=gf.ResonatorSTF(25., frequency=0.114)               ###CHANGE###
 
     # return a pyrocko.gf.Reponse object.
     response_VT = engine.process(source_mt_VT, targets_VT)
@@ -149,6 +149,6 @@ for s in stations:
 #trace.snuffle(trs_VLP_synth)
 
 # save synth traces (watch out for the 'location' parameter: max 2 letters)
-io.save(trs_VT_synth, '../DATA/VT_flegrei_2023_06_11_06_44_25/VT_short_iso_homo_2_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VLP_synth, '../DATA/VLP_flegrei_2023_06_11_06_44_25/VLP_short_iso_homo_2_flegrei_2023_06_11_06_44_25.mseed')
-io.save(trs_VT_VLP_synth, '../DATA/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_short_iso_homo_2_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_synth, '../DATA/VT_flegrei_2023_06_11_06_44_25/VT_synth_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VLP_synth, '../DATA/VLP_flegrei_2023_06_11_06_44_25/VLP_synth_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_VLP_synth, '../DATA/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_synth_flegrei_2023_06_11_06_44_25.mseed')

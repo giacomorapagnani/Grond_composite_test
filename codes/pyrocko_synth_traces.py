@@ -52,7 +52,7 @@ for s in stations:
         print(f'Error: event {e_name} not found in {catname_VLP}')
 
     # Synth
-    store_id = 'campiflegrei_near_0_dist_long_2'          ###CHANGE###
+    store_id = 'campiflegrei_near_0_dist'          ###CHANGE###
 
     engine = LocalEngine(store_superdirs=['../GF_STORES'])
 
@@ -78,7 +78,7 @@ for s in stations:
     source_mt_VT = MTSource.from_pyrocko_event(ev_VT)
 
     source_mt_VLP = MTSource.from_pyrocko_event(ev_VLP)
-    source_mt_VLP.stf=gf.ResonatorSTF(30., frequency=0.114)
+    source_mt_VLP.stf=gf.ResonatorSTF(25., frequency=0.114)               ###CHANGE###
 
     # return a pyrocko.gf.Reponse object.
     response_VT = engine.process(source_mt_VT, targets_VT)
@@ -93,7 +93,7 @@ for s in stations:
     a=synthetic_traces_VT[0].tmax-synthetic_traces_VT[0].tmin
     b=synthetic_traces_VLP[0].tmax-synthetic_traces_VLP[0].tmin
     print(f'BEFORE\nlenght of VT:{a}s\nlengthof VLP: {b}')
-    # chop heads and tails
+    # cut first and last element (??? too few ???)
     trs_VT= [ x.chop(x.tmin+1,x.tmax-1) for x in synthetic_traces_VT ]
     trs_VLP= [ x.chop(x.tmin+1,x.tmax-1) for x in synthetic_traces_VLP ]
     # add longer heads and tails
@@ -102,7 +102,8 @@ for s in stations:
     for tr in trs_VT:
         newtr = tr.copy()
         ydata = newtr.get_ydata()
-        ydata= ydata - np.mean(ydata)
+        # de-mean or better filtering?
+        #ydata= ydata - np.mean(ydata)
         first, last = ydata[0], ydata[-1]
         npts = int(tlen/newtr.deltat)
         ydata = np.concatenate( (np.ones(npts) * first, ydata, np.ones(npts) * last) )
@@ -117,7 +118,7 @@ for s in stations:
         newtr = tr.copy()
         ydata = newtr.get_ydata()
         # de-mean or better filtering?
-        ydata= ydata - np.mean(ydata)
+        #ydata= ydata - np.mean(ydata)
         first, last = ydata[0], ydata[-1]
         npts = int(tlen/newtr.deltat)
         ydata = np.concatenate( (np.ones(npts) * first, ydata, np.ones(npts) * last) )
@@ -152,9 +153,9 @@ for s in stations:
     trs_VT_VLP_synth.extend(trs_sum)     # sum
 
 # snuffler
-trace.snuffle(trs_VLP)
+#trace.snuffle(trs_VLP)
 
 # save synth traces (watch out for the 'location' parameter: max 2 letters)
-#io.save(trs_VT_synth, '../DATA/VT_flegrei_2023_06_11_06_44_25/VT_2_flegrei_2023_06_11_06_44_25.mseed')
-#io.save(trs_VLP_synth, '../DATA/VLP_flegrei_2023_06_11_06_44_25/VLP_2_flegrei_2023_06_11_06_44_25.mseed')
-#io.save(trs_VT_VLP_synth, '../DATA/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_2_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_synth, '../DATA/VT_flegrei_2023_06_11_06_44_25/VT_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VLP_synth, '../DATA/VLP_flegrei_2023_06_11_06_44_25/VLP_flegrei_2023_06_11_06_44_25.mseed')
+io.save(trs_VT_VLP_synth, '../DATA/VT+VLP_flegrei_2023_06_11_06_44_25/VT+VLP_flegrei_2023_06_11_06_44_25.mseed')

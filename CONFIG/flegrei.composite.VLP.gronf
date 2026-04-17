@@ -82,15 +82,15 @@ problem_config: !grond.CompositeProblemConfig
       frequency: 0.075 .. 0.15
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
-  niterations: 2000
+  niterations: 1000
   use_reference_magnitude: false
 optimiser_config: !grond.HighScoreOptimiserConfig
   sampler_phases:
   - !grond.UniformSamplerPhase
-    niterations: 20000
+    niterations: 5000
     ntries_preconstrain_limit: 1000
   - !grond.DirectedSamplerPhase
-    niterations: 200000
+    niterations: 30000
     ntries_preconstrain_limit: 1000
     starting_point: excentricity_compensated
     sampler_distribution: normal

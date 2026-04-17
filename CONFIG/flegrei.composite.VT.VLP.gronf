@@ -57,7 +57,7 @@ target_groups:
   misfit_config: !grond.WaveformMisfitConfig
     quantity: displacement
     fmin: 0.09
-    fmax: 0.12
+    fmax: 0.14
     ffactor: 1.1
     tmin: stored:P - 60
     tmax: stored:P + 120
@@ -77,7 +77,7 @@ target_groups:
   exclude: []
   misfit_config: !grond.WaveformMisfitConfig
     fmin: 0.09
-    fmax: 0.12
+    fmax: 0.14
     ffactor: 1.1
     domain: frequency_domain
     norm_exponent: 1
@@ -126,7 +126,7 @@ problem_config: !grond.CompositeProblemConfig
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
       time: -2.0 .. 3.0 | add
-      frequency: 0.075 .. 0.15
+      frequency: 0.08 .. 0.15
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
   niterations: 2000
@@ -134,10 +134,10 @@ analyser_configs:
 optimiser_config: !grond.HighScoreOptimiserConfig
   sampler_phases:
   - !grond.UniformSamplerPhase
-    niterations: 20000
+    niterations: 10000
     ntries_preconstrain_limit: 1000
   - !grond.DirectedSamplerPhase
-    niterations: 200000
+    niterations: 50000
     ntries_preconstrain_limit: 1000
     starting_point: excentricity_compensated
     sampler_distribution: normal
