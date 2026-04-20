@@ -6,7 +6,7 @@ rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
   events_path: '../CAT/catalogue_flegrei_VT.pf'
-  waveform_paths: ['../DATA/VT+VLP_${event_name}']
+  waveform_paths: ['../DATA/VT_${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_flat_response_from_mseed.xml']
   extend_incomplete: true
   #picks_paths: ['../MARKERS/${event_name}']
@@ -38,7 +38,7 @@ target_groups:
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
 problem_config: !grond.CompositeProblemConfig
-  name_template: cmt_composite_VT_sum_${event_name}
+  name_template: cmt_composite_VT_${event_name}
   norm_exponent: 2
   subproblem_configs:
   - !grond.CMTSubProblemConfig
