@@ -1,16 +1,18 @@
 %YAML 1.1
 # Composite Grond Config:
 # VT
+# (NO fixed parameters)
   # td.near.vt: 0.5-2.0  Hz
 
 # VLP (same as in main article)
+# (hypocenter and time fixed)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
 --- !grond.Config
 rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
-  events_path: '../CAT/catalogue_flegrei_VT.pf'
+  events_path: '../CAT/catalogue_flegrei_VLP.pf'
   waveform_paths: ['../DATA/VT+VLP_${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_flat_response_from_mseed.xml']
   extend_incomplete: true
@@ -60,7 +62,7 @@ target_groups:
   misfit_config: !grond.WaveformMisfitConfig
     quantity: displacement
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     tmin: stored:P - 60
     tmax: stored:P + 120
@@ -81,7 +83,7 @@ target_groups:
   exclude: []
   misfit_config: !grond.WaveformMisfitConfig
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     domain: frequency_domain
     norm_exponent: 1
@@ -90,7 +92,7 @@ target_groups:
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
 problem_config: !grond.CompositeProblemConfig
-  name_template: cmt_composite_VT+VLP_${event_name}
+  name_template: cmt_composite_VT+VLP_fix_3_${event_name}
   norm_exponent: 2
   subproblem_configs:
 
@@ -111,7 +113,7 @@ problem_config: !grond.CompositeProblemConfig
       rmnd: -1 .. 1
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
-      time: '-2.0 .. 1.0 | add'
+      time: '-2. .. 1. | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
@@ -120,30 +122,30 @@ problem_config: !grond.CompositeProblemConfig
     stf_type: ResonatorSTF
     mt_random: uniform
     ranges:
-      depth: 1000 .. 5000
-      duration: 1. .. 40.
-      east_shift: -6000 .. 6000
+      depth: 3989 .. 3989
+      duration: 15. .. 35.
+      east_shift: 0 .. 0
       magnitude: 1. .. 4.
-      north_shift: -6000 .. 6000
+      north_shift: 0 .. 0
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
       rmnd: -1 .. 1
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
-      time: -2.0 .. 3.0 | add
+      time: 0. .. 0. | add
       frequency: 0.08 .. 0.15
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
-  niterations: 5000
+  niterations: 2000
   use_reference_magnitude: false
 optimiser_config: !grond.HighScoreOptimiserConfig
   sampler_phases:
   - !grond.UniformSamplerPhase
-    niterations: 50000
+    niterations: 20000
     ntries_preconstrain_limit: 1000
   - !grond.DirectedSamplerPhase
-    niterations: 500000
+    niterations: 100000
     ntries_preconstrain_limit: 1000
     starting_point: excentricity_compensated
     sampler_distribution: normal

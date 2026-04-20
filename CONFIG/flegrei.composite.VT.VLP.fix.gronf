@@ -1,8 +1,12 @@
 %YAML 1.1
 # Composite Grond Config:
-# VT
+
+# VT 
+# (hypocenter and time fixed)
   # td.near.vt: 0.5-2.0  Hz
+
 # VLP (same as in main article)
+# (hypocenter and time fixed)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
 --- !grond.Config
@@ -17,6 +21,7 @@ dataset_config: !grond.DatasetConfig
   #blacklist_paths: ['../BLACKLIST_COMPOSITE/${event_name}.black']
   whitelist_paths: []
 target_groups:
+
 - !grond.WaveformTargetGroup
   normalisation_family: time_domain
   path: td.vt
@@ -41,6 +46,7 @@ target_groups:
     norm_exponent: 1
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
+
 - !grond.WaveformTargetGroup
   normalisation_family: time_domain
   path: td.vlp
@@ -57,7 +63,7 @@ target_groups:
   misfit_config: !grond.WaveformMisfitConfig
     quantity: displacement
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     tmin: stored:P - 60
     tmax: stored:P + 120
@@ -65,6 +71,7 @@ target_groups:
     norm_exponent: 1
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
+
 - !grond.WaveformTargetGroup
   normalisation_family: frequency_domain
   path: fd.vlp
@@ -77,7 +84,7 @@ target_groups:
   exclude: []
   misfit_config: !grond.WaveformMisfitConfig
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     domain: frequency_domain
     norm_exponent: 1
@@ -89,24 +96,26 @@ problem_config: !grond.CompositeProblemConfig
   name_template: cmt_composite_VT+VLP_fix_${event_name}
   norm_exponent: 2
   subproblem_configs:
+
   - !grond.CMTSubProblemConfig
     name: vt
     distance_min: 100.0
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 1000 .. 5000
+      depth: 3554 .. 3554
       duration: 0.1 .. 0.1
-      east_shift: -4000 .. 4000
+      east_shift: 0 .. 0
       magnitude: 1. .. 4.
-      north_shift: -4000 .. 4000
+      north_shift: 0 .. 0
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
       rmnd: -1 .. 1
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
-      time: '-2.0 .. 1.0 | add'
+      time: '0. .. 0. | add'
+
   - !grond.CMTSubProblemConfig
     name: vlp
     distance_min: 100.0
@@ -114,30 +123,30 @@ problem_config: !grond.CompositeProblemConfig
     stf_type: ResonatorSTF
     mt_random: uniform
     ranges:
-      depth: 1000 .. 5000
-      duration: 1. .. 40.
-      east_shift: -6000 .. 6000
+      depth: 3989 .. 3989
+      duration: 15. .. 35.
+      east_shift: 0 .. 0
       magnitude: 1. .. 4.
-      north_shift: -6000 .. 6000
+      north_shift: 0 .. 0
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
       rmnd: -1 .. 1
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
-      time: -2.0 .. 3.0 | add
+      time: 0. .. 0. | add
       frequency: 0.08 .. 0.15
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
-  niterations: 2000
+  niterations: 1000
   use_reference_magnitude: false
 optimiser_config: !grond.HighScoreOptimiserConfig
   sampler_phases:
   - !grond.UniformSamplerPhase
-    niterations: 20000
+    niterations: 10000
     ntries_preconstrain_limit: 1000
   - !grond.DirectedSamplerPhase
-    niterations: 130000
+    niterations: 50000
     ntries_preconstrain_limit: 1000
     starting_point: excentricity_compensated
     sampler_distribution: normal
