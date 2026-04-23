@@ -60,7 +60,7 @@ target_groups:
   misfit_config: !grond.WaveformMisfitConfig
     quantity: displacement
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     tmin: stored:P - 60
     tmax: stored:P + 120
@@ -81,7 +81,7 @@ target_groups:
   exclude: []
   misfit_config: !grond.WaveformMisfitConfig
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     domain: frequency_domain
     norm_exponent: 1
@@ -90,7 +90,7 @@ target_groups:
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
 problem_config: !grond.CompositeProblemConfig
-  name_template: cmt_composite_VT+VLP_${event_name}
+  name_template: cmt_composite_VT+VLP_2_${event_name}
   norm_exponent: 2
   subproblem_configs:
 
@@ -132,7 +132,7 @@ problem_config: !grond.CompositeProblemConfig
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
       time: -2.0 .. 3.0 | add
-      frequency: 0.08 .. 0.15
+      frequency: 0.08 .. 0.14
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
   niterations: 5000

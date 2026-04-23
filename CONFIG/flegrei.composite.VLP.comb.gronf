@@ -35,7 +35,7 @@ target_groups:
   misfit_config: !grond.WaveformMisfitConfig
     quantity: displacement
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     tmin: stored:P - 60
     tmax: stored:P + 120
@@ -56,7 +56,7 @@ target_groups:
   exclude: []
   misfit_config: !grond.WaveformMisfitConfig
     fmin: 0.09
-    fmax: 0.14
+    fmax: 0.12
     ffactor: 1.1
     domain: frequency_domain
     norm_exponent: 1
@@ -95,19 +95,20 @@ problem_config: !grond.CompositeProblemConfig
     stf_type: ResonatorSTF
     mt_random: uniform
     ranges:
-      depth: 1000 .. 5000
+      depth: 3000 .. 4500
       duration: 1. .. 40.
-      east_shift: -6000 .. 6000
+      east_shift: -3000 .. 3000
       magnitude: 1. .. 4.
-      north_shift: -6000 .. 6000
+      north_shift: -3000 .. 3000
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
       rmnd: -1 .. 1
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
-      time: -2.0 .. 3.0 | add
-      frequency: 0.08 .. 0.15
+      time: -1. .. 2. | add
+      frequency: 0.08 .. 0.14
+      
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
   niterations: 2000

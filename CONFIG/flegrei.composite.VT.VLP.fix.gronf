@@ -1,12 +1,11 @@
 %YAML 1.1
 # Composite Grond Config:
-
-# VT 
+# VT
 # (hypocenter and time fixed)
   # td.near.vt: 0.5-2.0  Hz
 
 # VLP (same as in main article)
-# (hypocenter and time fixed)
+# (narrower intervars for hypocenter and time parameters)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
 --- !grond.Config
@@ -105,9 +104,9 @@ problem_config: !grond.CompositeProblemConfig
     ranges:
       depth: 3554 .. 3554
       duration: 0.1 .. 0.1
-      east_shift: 0 .. 0
+      east_shift: -450 .. -450
       magnitude: 1. .. 4.
-      north_shift: 0 .. 0
+      north_shift: 750 .. 750
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
@@ -123,30 +122,31 @@ problem_config: !grond.CompositeProblemConfig
     stf_type: ResonatorSTF
     mt_random: uniform
     ranges:
-      depth: 3989 .. 3989
-      duration: 15. .. 35.
-      east_shift: 0 .. 0
+      depth: 3000 .. 4500
+      duration: 1. .. 40.
+      east_shift: -3000 .. 3000
       magnitude: 1. .. 4.
-      north_shift: 0 .. 0
+      north_shift: -3000 .. 3000
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
       rmnd: -1 .. 1
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
-      time: 0. .. 0. | add
-      frequency: 0.08 .. 0.15
+      time: -1. .. 2. | add
+      frequency: 0.08 .. 0.14
+
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
-  niterations: 1000
+  niterations: 2000
   use_reference_magnitude: false
 optimiser_config: !grond.HighScoreOptimiserConfig
   sampler_phases:
   - !grond.UniformSamplerPhase
-    niterations: 10000
+    niterations: 20000
     ntries_preconstrain_limit: 1000
   - !grond.DirectedSamplerPhase
-    niterations: 50000
+    niterations: 100000
     ntries_preconstrain_limit: 1000
     starting_point: excentricity_compensated
     sampler_distribution: normal
