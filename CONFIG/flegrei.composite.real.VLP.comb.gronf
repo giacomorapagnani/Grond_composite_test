@@ -1,8 +1,8 @@
 %YAML 1.1
 # Composite Grond Config:
 
-# VT
-# (hypocenter and time fixed)
+# VT (same as in main article)
+
 # VLP (same as in main article)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
@@ -77,18 +77,18 @@ problem_config: !grond.CompositeProblemConfig
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 3554 .. 3554
+      depth: 1000 .. 5000
       duration: 0.1 .. 0.1
-      east_shift: -450 .. -450
-      magnitude: 2.93 .. 2.93
-      north_shift: 750 .. 750
+      east_shift: -4000 .. 4000
+      magnitude: 1. .. 4.
+      north_shift: -4000 .. 4000
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
       rmnd: -1 .. 1
       rmne: -1 .. 1
       rmnn: -1.5708 .. 1.5708
-      time: '0. .. 0. | add'
+      time: '-2.0 .. 1.0 | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
