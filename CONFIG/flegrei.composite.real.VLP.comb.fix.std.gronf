@@ -2,7 +2,7 @@
 # Composite Grond Config:
 
 # VT
-# (fixed location, O.T. and source parameters)
+# (+- std location, O.T. and source parameters)
 
 # VLP (same as in main article)
   # td.near: 0.09-0.12 Hz
@@ -68,28 +68,29 @@ target_groups:
     autoshift_penalty_max: 0.2
     
 problem_config: !grond.CompositeProblemConfig
-  name_template: cmt_composite_real_VLP_comb_fix_all_${event_name}
+  name_template: cmt_composite_real_VLP_comb_fix_std_${event_name}
   norm_exponent: 2
   subproblem_configs:
 
+# VT shift from reference VLP: -450m E, 750m N
   - !grond.CMTSubProblemConfig
     name: vt
     distance_min: 100.0
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 3550 .. 3550
+      depth: 2670 .. 4430
       duration: 0.1 .. 0.1
-      east_shift: -450 .. -450
+      east_shift: -2490 .. -530
       magnitude: 2.93 .. 2.93
-      north_shift: 750 .. 750
+      north_shift: 150 .. 2350
       rmdd: -0.62 .. -0.62
       rmed: 0.65 .. 0.65
       rmee: -0.21 .. -0.21
       rmnd: 0.13 .. 0.13
       rmne: -0.05 .. -0.05
       rmnn: 0.83 .. 0.83
-      time: '-0. .. 0. | add'
+      time: '-0.26 .. 0.52 | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
