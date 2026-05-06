@@ -2,8 +2,6 @@
 """
 Script per creare una risposta strumentale PIATTA compatibile con ObsPy.
 La risposta piatta ha poli e zeri che si annullano, risultando in risposta unitaria.
-
-Autore: Generato per sismologo
 """
 
 import xml.etree.ElementTree as ET
