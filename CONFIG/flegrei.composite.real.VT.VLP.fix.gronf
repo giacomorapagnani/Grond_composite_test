@@ -1,17 +1,19 @@
 %YAML 1.1
 # Composite Grond Config:
+# reference event: lat,lon from VT best, source parameters from VLP
+
 # VT
-# (fixed location and O.T., +- std source parameters)
-  # td.near.vt: 0.5-2.0  Hz
+# (fixed location and O.T. (best VT solution), 68% interval source parameters)
 
 # VLP (same as in main article)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
+
 --- !grond.Config
 rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
-  events_path: '../CAT/catalogue_flegrei_VLP.pf'
+  events_path: '../CAT/catalogue_composite_reference.pf'
   waveform_paths: ['../DATA/${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_final.xml']
   extend_incomplete: true
@@ -90,6 +92,7 @@ target_groups:
     tmax: stored:P + 120.
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
+    
 problem_config: !grond.CompositeProblemConfig
   name_template: cmt_composite_real_VT+VLP_fix_${event_name}
   norm_exponent: 2
@@ -103,16 +106,16 @@ problem_config: !grond.CompositeProblemConfig
     ranges:
       depth: 3550 .. 3550
       duration: 0.1 .. 0.1
-      east_shift: -450 .. -450
-      magnitude: 2.70 .. 3.10
-      north_shift: 750 .. 750
-      rmdd: -0.97 .. -0.27
-      rmed: 0.37 .. 0.93
-      rmee: -0.56 .. 0.14
-      rmnd: -0.27 .. 0.53
-      rmne: -0.39 .. 0.29
-      rmnn: 0.47 .. 1.19
-      time: '-0. .. 0. | add'
+      east_shift: 0. .. 0.
+      magnitude: 2.77 .. 3.10
+      north_shift: 0. .. 0.
+      rmdd: -0.90 .. -0.29
+      rmed: -0.04 .. 0.61
+      rmee: -0.35 .. 0.29
+      rmnd: -0.45 .. 0.45
+      rmne: -0.34 .. 0.40
+      rmnn: 0.33 .. 0.89
+      time: '0.13 .. 0.13 | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
@@ -123,9 +126,9 @@ problem_config: !grond.CompositeProblemConfig
     ranges:
       depth: 3000 .. 4500
       duration: 1. .. 40.
-      east_shift: -3000 .. 3000
+      east_shift: -6000 .. 6000
       magnitude: 1. .. 4.
-      north_shift: -3000 .. 3000
+      north_shift: -4000 .. 4000
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708

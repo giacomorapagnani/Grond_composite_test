@@ -1,17 +1,19 @@
 %YAML 1.1
 # Composite Grond Config:
+# reference event: lat,lon from VT best, source parameters from VLP
+
 # VT
-# (+- std location, O.T. and source parameters)
-  # td.near.vt: 0.5-2.0  Hz
+# (68% intervals source parameters, location and O.T.)
 
 # VLP (same as in main article)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
+
 --- !grond.Config
 rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
-  events_path: '../CAT/catalogue_flegrei_VLP.pf'
+  events_path: '../CAT/catalogue_composite_reference.pf'
   waveform_paths: ['../DATA/${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_final.xml']
   extend_incomplete: true
@@ -19,31 +21,6 @@ dataset_config: !grond.DatasetConfig
   blacklist_paths: ['../BLACKLIST/${event_name}.black']
   whitelist_paths: []
 target_groups:
-
-- !grond.WaveformTargetGroup
-  normalisation_family: time_domain
-  path: td.vt
-  weight: 1.0
-  interpolation: nearest_neighbor
-  store_id: campiflegrei_near_0_dist
-  distance_min: 0.1e3
-  distance_max: 10e3
-  exclude: []
-  channels:
-  - Z
-  - R
-  - T
-  misfit_config: !grond.WaveformMisfitConfig
-    quantity: displacement
-    fmin: 0.5
-    fmax: 2.0
-    ffactor: 1.5
-    tmin: stored:P - 0.5
-    tmax: stored:S + 1.5
-    domain: time_domain
-    norm_exponent: 1
-    tautoshift_max: 1.0
-    autoshift_penalty_max: 0.2
 
 - !grond.WaveformTargetGroup
   normalisation_family: time_domain
@@ -90,30 +67,30 @@ target_groups:
     tmax: stored:P + 120.
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
+    
 problem_config: !grond.CompositeProblemConfig
-  name_template: cmt_composite_real_VT+VLP_fix_std_${event_name}
+  name_template: cmt_composite_real_VLP_comb_std_${event_name}
   norm_exponent: 2
   subproblem_configs:
 
-# VT shift from reference VLP: -450m E, 750m N
   - !grond.CMTSubProblemConfig
     name: vt
     distance_min: 100.0
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 2670 .. 4430
+      depth: 2810 .. 4310
       duration: 0.1 .. 0.1
-      east_shift: -2490 .. -530
-      magnitude: 2.93 .. 2.93
-      north_shift: 150 .. 2350
-      rmdd: -0.62 .. -0.62
-      rmed: 0.65 .. 0.65
-      rmee: -0.21 .. -0.21
-      rmnd: 0.13 .. 0.13
-      rmne: -0.05 .. -0.05
-      rmnn: 0.83 .. 0.83
-      time: '-0.26 .. 0.52 | add'
+      east_shift: -1550 .. 330
+      magnitude: 2.77 .. 3.10
+      north_shift: -300 .. 1700
+      rmdd: -0.90 .. -0.29
+      rmed: -0.04 .. 0.61
+      rmee: -0.35 .. 0.29
+      rmnd: -0.45 .. 0.45
+      rmne: -0.34 .. 0.40
+      rmnn: 0.33 .. 0.89
+      time: '-0.24 .. 0.39 | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
@@ -124,9 +101,9 @@ problem_config: !grond.CompositeProblemConfig
     ranges:
       depth: 3000 .. 4500
       duration: 1. .. 40.
-      east_shift: -3000 .. 3000
+      east_shift: -6000 .. 6000
       magnitude: 1. .. 4.
-      north_shift: -3000 .. 3000
+      north_shift: -4000 .. 4000
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708

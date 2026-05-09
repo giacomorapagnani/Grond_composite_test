@@ -5,6 +5,7 @@ GF_STORES/*
 DATA/*
 DATA_RESPONSE/*
 DATA_iso/*
+PLOTS/*
 .github/*
 .vscode/*
 grond_test/*
