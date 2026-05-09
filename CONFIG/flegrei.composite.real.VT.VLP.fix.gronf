@@ -13,7 +13,7 @@
 rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
-  events_path: '../CAT/catalogue_composite_reference.pf'
+  events_path: '../CAT/catalogue_flegrei_test_composite_reference.pf'
   waveform_paths: ['../DATA/${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_final.xml']
   extend_incomplete: true
@@ -137,6 +137,7 @@ problem_config: !grond.CompositeProblemConfig
       rmnn: -1.5708 .. 1.5708
       time: -1.0 .. 2.0 | add
       frequency: 0.08 .. 0.14
+
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
   niterations: 5000

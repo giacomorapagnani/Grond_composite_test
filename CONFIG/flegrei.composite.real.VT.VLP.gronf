@@ -7,11 +7,12 @@
 # weight: 2.0 (td, fd)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
+
 --- !grond.Config
 rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
-  events_path: '../CAT/catalogue_composite_reference.pf'
+  events_path: '../CAT/catalogue_flegrei_test_composite_reference.pf'
   waveform_paths: ['../DATA/${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_final.xml']
   extend_incomplete: true
@@ -124,9 +125,9 @@ problem_config: !grond.CompositeProblemConfig
     ranges:
       depth: 3000 .. 4500
       duration: 1. .. 40.
-      east_shift: -3000 .. 3000
+      east_shift: -6000 .. 6000
       magnitude: 1. .. 4.
-      north_shift: -3000 .. 3000
+      north_shift: -4000 .. 4000
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
