@@ -13,7 +13,7 @@
 rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
-  events_path: '../CAT/catalogue_flegrei_test_composite_reference.pf'
+  events_path: '../CAT/catalogue_flegrei_composite_reference.pf'
   waveform_paths: ['../DATA/${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_final.xml']
   extend_incomplete: true
