@@ -4,7 +4,7 @@
   # td.near.vt: 0.5-2.0  Hz
 
 # VLP (same as in main article)
-# weight: 2.0 (td, fd)
+# weight: 10.0 (td, fd)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
 
@@ -49,7 +49,7 @@ target_groups:
 - !grond.WaveformTargetGroup
   normalisation_family: time_domain
   path: td.lf
-  weight: 2.0
+  weight: 10.0
   interpolation: multilinear
   store_id: campiflegrei_near_0_dist
   distance_min: 100.0
@@ -74,7 +74,7 @@ target_groups:
 - !grond.WaveformTargetGroup
   normalisation_family: frequency_domain
   path: fd.lf
-  weight: 2.0
+  weight: 10.0
   interpolation: nearest_neighbor
   store_id: campiflegrei_near_0_dist
   distance_min: 0.1e3
