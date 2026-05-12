@@ -24,10 +24,10 @@ metadatadir='../META_DATA'
 stations_name=os.path.join(metadatadir,'stations_flegrei_INGV_final.pf')
 stations=model.load_stations(stations_name)
 
-catname_VLP=os.path.join(catdir,'catalogue_flegrei_VLP.pf')
+catname_VLP=os.path.join(catdir,'catalogue_flegrei_test_VLP.pf')
 events_VLP = model.load_events(catname_VLP)
 
-catname_VT=os.path.join(catdir,'catalogue_flegrei_VT.pf')
+catname_VT=os.path.join(catdir,'catalogue_flegrei_test_VT.pf')
 events_VT = model.load_events(catname_VT)
 
 # Select station

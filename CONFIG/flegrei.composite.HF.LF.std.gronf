@@ -1,7 +1,9 @@
 %YAML 1.1
 # Composite Grond Config:
+# reference event: lat,lon from VT best, source parameters from VLP
 
-# VT (same as in main article)
+# VT
+# (68% intervals source parameters, location and O.T.)
 
 # VLP (same as in main article)
   # td.near: 0.09-0.12 Hz
@@ -22,7 +24,32 @@ target_groups:
 
 - !grond.WaveformTargetGroup
   normalisation_family: time_domain
-  path: td.vlp
+  path: td.hf
+  weight: 1.0
+  interpolation: nearest_neighbor
+  store_id: campiflegrei_near_0_dist
+  distance_min: 0.1e3
+  distance_max: 10e3
+  exclude: []
+  channels:
+  - Z
+  - R
+  - T
+  misfit_config: !grond.WaveformMisfitConfig
+    quantity: displacement
+    fmin: 0.5
+    fmax: 2.0
+    ffactor: 1.5
+    tmin: stored:P - 0.5
+    tmax: stored:S + 1.5
+    domain: time_domain
+    norm_exponent: 1
+    tautoshift_max: 1.0
+    autoshift_penalty_max: 0.2
+
+- !grond.WaveformTargetGroup
+  normalisation_family: time_domain
+  path: td.lf
   weight: 1.0
   interpolation: multilinear
   store_id: campiflegrei_near_0_dist
@@ -47,7 +74,7 @@ target_groups:
 
 - !grond.WaveformTargetGroup
   normalisation_family: frequency_domain
-  path: fd.vlp
+  path: fd.lf
   weight: 1.0
   interpolation: nearest_neighbor
   store_id: campiflegrei_near_0_dist
@@ -65,9 +92,9 @@ target_groups:
     tmax: stored:P + 120.
     tautoshift_max: 1.0
     autoshift_penalty_max: 0.2
-    
+
 problem_config: !grond.CompositeProblemConfig
-  name_template: cmt_composite_real_VLP_comb_${event_name}
+  name_template: cmt_composite_HF+LF_std_${event_name}
   norm_exponent: 2
   subproblem_configs:
 
@@ -77,18 +104,18 @@ problem_config: !grond.CompositeProblemConfig
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 1000 .. 5000
+      depth: 2810 .. 4310
       duration: 0.1 .. 0.1
-      east_shift: -4000 .. 4000
-      magnitude: 1. .. 4.
-      north_shift: -4000 .. 4000
-      rmdd: -1.5708 .. 1.5708
-      rmed: -1 .. 1
-      rmee: -1.5708 .. 1.5708
-      rmnd: -1 .. 1
-      rmne: -1 .. 1
-      rmnn: -1.5708 .. 1.5708
-      time: '-2.0 .. 1.0 | add'
+      east_shift: -1550 .. 330
+      magnitude: 2.77 .. 3.10
+      north_shift: -300 .. 1700
+      rmdd: -0.90 .. -0.29
+      rmed: -0.04 .. 0.61
+      rmee: -0.35 .. 0.29
+      rmnd: -0.45 .. 0.45
+      rmne: -0.34 .. 0.40
+      rmnn: 0.33 .. 0.89
+      time: '-0.24 .. 0.39 | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
