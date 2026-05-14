@@ -19,7 +19,7 @@ dataset_config: !grond.DatasetConfig
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_final.xml']
   extend_incomplete: true
   #picks_paths: ['../MARKERS/${event_name}']
-  blacklist_paths: ['../BLACKLIST/${event_name}.black']
+  blacklist_paths: ['../BLACKLIST_VLP/${event_name}.black']
   whitelist_paths: []
 target_groups:
 
