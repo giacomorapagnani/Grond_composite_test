@@ -79,18 +79,18 @@ problem_config: !grond.CompositeProblemConfig
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 2810 .. 4310
+      depth: 2812.9988 .. 4311.5466
       duration: 0.1 .. 0.1
-      east_shift: -1550 .. 330
-      magnitude: 2.77 .. 3.10
-      north_shift: -300 .. 1700
-      rmdd: -0.90 .. -0.29
-      rmed: -0.04 .. 0.61
-      rmee: -0.35 .. 0.29
-      rmnd: -0.45 .. 0.45
-      rmne: -0.34 .. 0.40
-      rmnn: 0.33 .. 0.89
-      time: '-0.24 .. 0.39 | add'
+      east_shift: -1553.3043 .. 326.37168
+      magnitude: 2.7747531 .. 3.1006486
+      north_shift: -321.41894 .. 1708.3156
+      rmdd: -0.89578288 .. -0.29230385
+      rmed: -0.037526627 .. 0.61144367
+      rmee: -0.35405119 .. 0.2918408
+      rmnd: -0.44809926 .. 0.44916153
+      rmne: -0.3410317 .. 0.40010144
+      rmnn: 0.32730309 .. 0.89255625
+      time: '-0.23873581 .. 0.39286542 | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
