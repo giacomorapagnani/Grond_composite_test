@@ -19,6 +19,6 @@ events=(
 
 for ev in "${events[@]}"; do
   gronf_name=$(echo "$ev" | sed 's/flegrei_/flegrei./; s/_/./g; s/$/.composite.LF.std.gronf/')
-  screen -dmS "$ev" bash -c "source ../venvs/grond_composite_0/bin/activate && grond go CONFIG/${gronf_name} ${ev} && grond report runs/cmt_composite_LF_std_${ev}"
+  screen -dmS "$ev" bash -c "source ../venvs/grond_composite_0/bin/activate && grond go CONFIG/${gronf_name} ${ev} && grond report runs/cmt_composite_LF_std_${ev}.grun/"
   echo "Avviato: $ev"
 done
