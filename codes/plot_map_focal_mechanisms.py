@@ -13,7 +13,7 @@ metadatadir =  os.path.join(workdir,'META_DATA')
 ##########################################
 # COORDINATES FOR GULF MAP OR POZZUOLI MAP
 
-switch_coord_far=True
+switch_coord_far=False
 
 if switch_coord_far:
     # FAR COORD 
@@ -50,7 +50,7 @@ fig.grdimage(grid=topo_data, region=region, projection=projection, shading="+a45
 fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 
 #   PLOT FOCAL MECHANISM
-filename='catalogue_flegrei_MT_VT'             ###CHANGE###  catalogue_flegrei_MT_VT_reloc 
+filename='catalogue_flegrei_composite_MT_LF_reloc_best'             ###CHANGE###  catalogue_flegrei_MT_VT_reloc 
                                                             # catalogue_flegrei_MT_VLP_reloc
 events_name=os.path.join(catdir,filename+'.pf')              
 fm_events = model.load_events(events_name)
@@ -65,7 +65,7 @@ switch_deviatoric=True
 ##########################################
 ############## SWITCH ##############
 ##########################################
-switch_timestamps=True                                                                 
+switch_timestamps=False                                                                 
 
 
 # loop on events in catalogue and plot FM
@@ -87,7 +87,7 @@ for ev in fm_events:
             "exponent": 1                  # np.log10(mm) !!!WRONG!!!
             }
 
-        MT_white=False
+        MT_white=True
         if MT_white:
             fig.meca(spec=moment_tensor_par,convention='mt', longitude =ev.lon, latitude=ev.lat, depth=ev.depth,
                     scale="1.2c", compressionfill="white",extensionfill="white", pen="1p,black",outline="1p,black")
