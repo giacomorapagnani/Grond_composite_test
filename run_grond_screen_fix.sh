@@ -30,7 +30,7 @@ for ev in "${events[@]}"; do
     grond go CONFIG/${gronf_name} ${ev}
     if [ \$? -ne 0 ]; then echo '[ERROR] $ev: grond go fallito' >> errors.log; exit 1; fi
 
-    grond report runs/cmt_composite_LF_fix_${ev}
+    grond report runs/cmt_composite_LF_fix_${ev}.grun/
     if [ \$? -ne 0 ]; then echo '[ERROR] $ev: grond report fallito' >> errors.log; exit 1; fi
 
     echo '[OK] $ev: completato' >> errors.log
