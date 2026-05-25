@@ -50,8 +50,8 @@ fig.grdimage(grid=topo_data, region=region, projection=projection, shading="+a45
 fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 
 #   PLOT FOCAL MECHANISM
-filename='catalogue_flegrei_composite_MT_LF_reloc_best'             ###CHANGE###  catalogue_flegrei_MT_VT_reloc 
-                                                            # catalogue_flegrei_MT_VLP_reloc
+filename='catalogue_flegrei_composite_MT_LF_std_reloc_best'             ###CHANGE###  catalogue_flegrei_composite_MT_LF_std_reloc_best 
+                                                            # catalogue_flegrei_composite_presentation
 events_name=os.path.join(catdir,filename+'.pf')              
 fm_events = model.load_events(events_name)
 
