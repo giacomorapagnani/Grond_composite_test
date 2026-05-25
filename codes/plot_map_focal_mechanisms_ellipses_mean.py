@@ -12,9 +12,9 @@ metadatadir = os.path.join(workdir, 'META_DATA')
 # ─────────────────────────────────────────────────────────────────────────────
 # UNCERTAINTY ELLIPSES — style parameters (easy to modify)
 # ─────────────────────────────────────────────────────────────────────────────
-ELLIPSE_PEN        = "1.5p,#BD2025,2p_2p"   # pen: thickness, color:gray10, style
+ELLIPSE_PEN        = "2.0p,gray10,2p_2p"   # pen: thickness, color:gray10 / #BD2025, style
 ELLIPSE_N_POINTS   = 400                    # number of points along the ellipse
-ELLIPSE_FILE_NAME       = 'uncertainty_ellipses.txt'  # path to the ellipse parameter file
+ELLIPSE_FILE_NAME       = 'uncertainty_ellipses_old.txt'  # path to the ellipse parameter file
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -131,7 +131,7 @@ fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 # ─────────────────────────────────────────────────────────────────────────────
 # LOAD EVENTS AND ELLIPSE PARAMETERS
 # ─────────────────────────────────────────────────────────────────────────────
-filename   = 'catalogue_flegrei_composite_MT_LF_std_reloc_best'     #CHANGE: catalogue_flegrei_composite_MT_LF_std_reloc_best
+filename   = 'catalogue_flegrei_MT_VLP_reloc'     #CHANGE: catalogue_flegrei_composite_MT_LF_std_reloc_best
                                                             # catalogue_flegrei_MT_VLP_reloc
 events_name = os.path.join(catdir, filename + '.pf')
 fm_events  = model.load_events(events_name)
@@ -187,8 +187,8 @@ if all_semi_a_m:
     print(f"[INFO] mean ellipse area         : {mean_area_m2/1e6:.4f} km²")
 
     # Position the mean ellipse in the bottom-left corner (in degrees)
-    MEAN_ELLIPSE_OFFSET_LON = 0.010   # degrees from minlon
-    MEAN_ELLIPSE_OFFSET_LAT = 0.008   # degrees from minlat
+    MEAN_ELLIPSE_OFFSET_LON = 0.015   # degrees from minlon
+    MEAN_ELLIPSE_OFFSET_LAT = 0.015   # degrees from minlat
 
     # Convert mean semi-axes from metres to degrees at the anchor point
     anchor_lat = minlat + MEAN_ELLIPSE_OFFSET_LAT
