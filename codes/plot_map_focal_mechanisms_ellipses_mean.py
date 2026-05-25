@@ -50,27 +50,46 @@ def make_ellipse_coords(lat_ref, lon_ref, e16, e84, n16, n84, n_pts=200):
     """
     Build an array of (lon, lat) points tracing an axis-aligned ellipse.
 
-    The ellipse axes are derived from the 16th–84th percentile shifts
-    (in metres, east/north):
-        centre_e = (e16 + e84) / 2
-        centre_n = (n16 + n84) / 2
-        semi_a   = (e84 - e16) / 2   ← east–west half-axis
-        semi_b   = (n84 - n16) / 2   ← north–south half-axis
+    The 4 shifts (metres) define the cardinal extremes of the ellipse.
+    Each extreme is converted to geographic coordinates independently via
+    od.ne_to_latlon(); lat_ref/lon_ref is only the local origin and may
+    fall outside the ellipse.
 
-    od.ne_to_latlon converts (north_m, east_m) offsets from the reference
-    point to geographic coordinates.
+    Returns: (lons, lats, semi_a_m, semi_b_m)
+        semi_a_m, semi_b_m  — half-axes in metres (for area computation)
     """
-    centre_e = (e16 + e84) / 2.0
-    centre_n = (n16 + n84) / 2.0
-    semi_a   = (e84 - e16) / 2.0   # east–west
-    semi_b   = (n84 - n16) / 2.0   # north–south
+    # Convert the 4 cardinal extreme points to geographic coords
+    lat_w, lon_w = od.ne_to_latlon(lat_ref, lon_ref, 0.0,  e16)   # west extreme
+    lat_e, lon_e = od.ne_to_latlon(lat_ref, lon_ref, 0.0,  e84)   # east extreme
+    lat_s, lon_s = od.ne_to_latlon(lat_ref, lon_ref, n16,  0.0)   # south extreme
+    lat_n, lon_n = od.ne_to_latlon(lat_ref, lon_ref, n84,  0.0)   # north extreme
 
-    theta = np.linspace(0, 2 * np.pi, n_pts)
-    east_pts  = centre_e + semi_a * np.cos(theta)   # metres
-    north_pts = centre_n + semi_b * np.sin(theta)   # metres
+    # Ellipse centre = midpoint of the two axis pairs
+    lat_c = (lat_s + lat_n) / 2.0
+    lon_c = (lon_w + lon_e) / 2.0
 
-    lats, lons = od.ne_to_latlon(lat_ref, lon_ref, north_pts, east_pts)
-    return lons, lats
+    # Semi-axes in degrees
+    semi_a_deg = abs(lon_e - lon_w) / 2.0   # east–west
+    semi_b_deg = abs(lat_n - lat_s) / 2.0   # north–south
+
+    # Semi-axes in metres (kept in original units for area)
+    semi_a_m = (e84 - e16) / 2.0
+    semi_b_m = (n84 - n16) / 2.0
+
+    # Parametric ellipse in geographic coords
+    theta     = np.linspace(0, 2 * np.pi, n_pts)
+    ell_lons  = lon_c + semi_a_deg * np.cos(theta)
+    ell_lats  = lat_c + semi_b_deg * np.sin(theta)
+
+    return ell_lons, ell_lats, semi_a_m, semi_b_m
+
+
+def make_ellipse_coords_from_axes(lon_c, lat_c, semi_a_deg, semi_b_deg, n_pts=200):
+    """Build ellipse coords given a geographic centre and semi-axes in degrees."""
+    theta    = np.linspace(0, 2 * np.pi, n_pts)
+    ell_lons = lon_c + semi_a_deg * np.cos(theta)
+    ell_lats = lat_c + semi_b_deg * np.sin(theta)
+    return ell_lons, ell_lats
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -131,22 +150,75 @@ switch_timestamps = False   # TRUE → print date next to each beach ball
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PLOT UNCERTAINTY ELLIPSES  (drawn first → below the beach balls)
+# also collect semi-axes (metres) for mean ellipse
 # ─────────────────────────────────────────────────────────────────────────────
+all_semi_a_m = []   # east–west half-axes in metres
+all_semi_b_m = []   # north–south half-axes in metres
+
 for ev in fm_events:
     if ev.name not in ellipses:
         print(f"[WARNING] no ellipse found for event: {ev.name}")
         continue
 
     ep = ellipses[ev.name]
-    ell_lons, ell_lats = make_ellipse_coords(
+    ell_lons, ell_lats, semi_a_m, semi_b_m = make_ellipse_coords(
         ep['lat_ref'], ep['lon_ref'],
         ep['e16'], ep['e84'],
         ep['n16'], ep['n84'],
         n_pts=ELLIPSE_N_POINTS
     )
 
+    all_semi_a_m.append(semi_a_m)
+    all_semi_b_m.append(semi_b_m)
+
     fig.plot(x=ell_lons, y=ell_lats, pen=ELLIPSE_PEN,
              region=region, projection=projection)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MEAN ELLIPSE — plotted in the bottom-left corner of the map
+# ─────────────────────────────────────────────────────────────────────────────
+if all_semi_a_m:
+    mean_semi_a_m = np.mean(all_semi_a_m)   # metres
+    mean_semi_b_m = np.mean(all_semi_b_m)   # metres
+    mean_area_m2  = np.pi * mean_semi_a_m * mean_semi_b_m
+
+    print(f"[INFO] mean semi-axis east–west : {mean_semi_a_m:.1f} m")
+    print(f"[INFO] mean semi-axis north–south: {mean_semi_b_m:.1f} m")
+    print(f"[INFO] mean ellipse area         : {mean_area_m2/1e6:.4f} km²")
+
+    # Position the mean ellipse in the bottom-left corner (in degrees)
+    MEAN_ELLIPSE_OFFSET_LON = 0.010   # degrees from minlon
+    MEAN_ELLIPSE_OFFSET_LAT = 0.008   # degrees from minlat
+
+    # Convert mean semi-axes from metres to degrees at the anchor point
+    anchor_lat = minlat + MEAN_ELLIPSE_OFFSET_LAT
+    anchor_lon = minlon + MEAN_ELLIPSE_OFFSET_LON
+
+    # 1 degree latitude ≈ 111320 m  (constant)
+    # 1 degree longitude ≈ 111320 * cos(lat) m
+    deg_per_m_lat = 1.0 / 111320.0
+    deg_per_m_lon = 1.0 / (111320.0 * np.cos(np.radians(anchor_lat)))
+
+    mean_semi_a_deg = mean_semi_a_m * deg_per_m_lon   # east–west
+    mean_semi_b_deg = mean_semi_b_m * deg_per_m_lat   # north–south
+
+    mean_lons, mean_lats = make_ellipse_coords_from_axes(
+        anchor_lon, anchor_lat,
+        mean_semi_a_deg, mean_semi_b_deg,
+        n_pts=ELLIPSE_N_POINTS
+    )
+
+    fig.plot(x=mean_lons, y=mean_lats, pen=ELLIPSE_PEN,
+             region=region, projection=projection)
+
+    # Label below the mean ellipse
+    fig.text(
+        text=f"mean ellipse  ({mean_area_m2/1e6:.3f} km\u00b2)",
+        x=anchor_lon,
+        y=anchor_lat - mean_semi_b_deg - 0.002,
+        font="5p,Helvetica,black",
+        justify="CM"
+    )
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PLOT FOCAL MECHANISMS
@@ -217,5 +289,5 @@ fig.plot(x=lonsta, y=latsta, style="t0.3", fill="#FFCC4E", pen="black")
 # SAVE & SHOW
 # ─────────────────────────────────────────────────────────────────────────────
 fig.show()
-suffix = 'deviatoric_ellipse' if switch_deviatoric else 'dc_ellipse'
+suffix = 'deviatoric_ellipse_mean' if switch_deviatoric else 'dc_ellipse_mean'
 fig.savefig(f'../PLOTS/MAPS/{filename}_{suffix}_{map_name}.pdf')
