@@ -31,7 +31,7 @@ catname_VT=os.path.join(catdir,'catalogue_flegrei_test_VT.pf')
 events_VT = model.load_events(catname_VT)
 
 # Select station
-s_name='CBAC'                           #CHANGE
+s_name='CMIS'                           #CHANGE : CBAC nord, CMIS nord!, CSTH nord
 st=False
 for s in stations:
     if s.station==s_name:
@@ -170,7 +170,7 @@ trs.extend(obs_trs)     # obs
 colors=['#BD2025','#FFCC4E','#FF7400','#64DC89']    # red, yellow, orange, green
 freq_ranges= [ [0.5,2],[0.075,0.125] ]
 # y limits
-ylims= [ 3.5e-4 , 5.e-6 ]  # VT, VLP range          # reference : flegrei_2023_06_11_06_44_25
+ylims= [ 2e-5 , 3.e-6 ]  # VT, VLP range          # reference : flegrei_2023_06_11_06_44_25
 
 trs_mseed=[]
 for l,fq in enumerate(freq_ranges):
