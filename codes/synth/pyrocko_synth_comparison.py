@@ -191,6 +191,7 @@ for l,fq in enumerate(freq_ranges):
         # chop 
         #o_t = int( round( ev_VT.time - tr.tmin ) )
         o_t = ev_VT.time
+        print('origin time:', o_t)
         tmp_trace.chop(o_t-chop1, o_t + chop2)
         # shift to 0, actually not to 00:00:00 but to 23:00:00 (DNW)
         new_tmin= 23*60*60.         #23:00:00
