@@ -139,7 +139,7 @@ for tr in obs_trs:
     tr.location = 'Recorded'
 
 # ── select N component (index 1 in ENZ order) ────────────────────────────────
-N = 1   # E=0, N=1, Z=2         #CHANGE
+N = 1   # E=0, N=1, Z=2
 
 tr_VT_N   = newtrs_VT[N]
 tr_VLP_N  = newtrs_VLP[N]
@@ -177,7 +177,10 @@ def filter_chop_plot(ax, tr, fq, o_t, color, label):
     # 3) chop to the final window
     tmp.chop(o_t - chop1, o_t + chop2)
 
-    new_tmin = 23*60*60.
+    # shift tmin so that origin time always falls at 23*3600 + chop1_ref
+    # regardless of the frequency band, guaranteeing sync across all subplots
+    chop1_ref = 30.   # seconds before o_t in the reference (LF) window
+    new_tmin = 23*60*60. + (chop1_ref - chop1)
     new_tmax = new_tmin + (tmp.tmax - tmp.tmin)
     tmp.tmin = new_tmin
     tmp.tmax = new_tmax
@@ -196,6 +199,9 @@ def filter_chop_plot(ax, tr, fq, o_t, color, label):
         eq_dates = [datetime.datetime.fromtimestamp(t) for t in tax]
 
     ax.plot(eq_dates, yax, color=color, linewidth=1.5, label=label)
+    ot_shifted = datetime.datetime.fromtimestamp(23*60*60. + chop1_ref)
+    ax.axvline(ot_shifted, color='k', linewidth=1., linestyle='--',
+               alpha=0.6, label='Origin time')
     ax.grid(True)
     ax.legend(loc=1)
     ax.set_ylabel('Displacement [m]')
@@ -210,7 +216,7 @@ LF = [0.075, 0.125]
 
 colors = {
     'VT':       '#BD2025',
-    'VLP':      '#FFCC4E', #2563EB
+    'VLP':      '#2563EB',
     'VT+VLP':   '#FF7400',
     'Recorded': '#22863A',
 }
@@ -237,6 +243,16 @@ for row, lbl in enumerate(['VT synthetic', 'VLP synthetic']):
     axs1[row,0].set_ylabel(f'{lbl}\nDisplacement [m]')
 for col in range(2):
     axs1[1,col].set_xlabel('Time')
+
+# LF column: restrict to 2 minutes (sharex='col' propagates to both rows)
+chop1_ref = 30.
+xmin_LF = datetime.datetime.fromtimestamp(23*60*60. + chop1_ref - 30.)
+xmax_LF = datetime.datetime.fromtimestamp(23*60*60. + chop1_ref + 90.)  # 08:02:00
+axs1[0,1].set_xlim(xmin_LF, xmax_LF)
+axs1[0,1].margins(x=0)
+axs1[1,1].margins(x=0)
+axs1[0,0].margins(x=0)
+axs1[1,0].margins(x=0)
 
 fig1.suptitle(f'{e_name}  |  Station: {s_name}  |  N component',
               fontsize=11, fontweight='bold')
@@ -267,7 +283,7 @@ for tr, col, lbl in traces_fig2:
     tmp.chop(o_t - 30, o_t + 150)
     all_y.append(tmp.get_ydata())
 
-global_ymax = max(np.max(np.abs(y)) for y in all_y) * 1.15
+global_ymax = max(np.max(np.abs(y)) for y in all_y) * 1.01
 
 # second pass: plot
 for i, (tr, col, lbl) in enumerate(traces_fig2):
@@ -276,6 +292,11 @@ for i, (tr, col, lbl) in enumerate(traces_fig2):
     if i < 3:
         axs2[i].set_xlabel('')
 axs2[3].set_xlabel('Time')
+
+# restrict x to 2 minutes (sharex propagates to all rows)
+axs2[0].set_xlim(xmin_LF, xmax_LF)
+for ax in axs2:
+    ax.margins(x=0)
 
 fig2.suptitle(
     f'{e_name}  |  Station: {s_name}  |  N component  |  '
