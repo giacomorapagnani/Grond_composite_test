@@ -19,6 +19,7 @@ from pyrocko.gf import LocalEngine, Target, MTSource
 catdir      = '../../CAT/synth'
 metadatadir = '../../META_DATA'
 datadir     = '../../DATA_RESPONSE'
+plotdir     = '../../PLOTS/SYNTH/'
 
 # ── load metadata ─────────────────────────────────────────────────────────────
 stations_name = os.path.join(metadatadir, 'stations_flegrei_INGV_final.pf')
@@ -198,9 +199,9 @@ def filter_chop_plot(ax, tr, fq, o_t, color, label):
     else:
         eq_dates = [datetime.datetime.fromtimestamp(t) for t in tax]
 
-    ax.plot(eq_dates, yax, color=color, linewidth=1.5, label=label)
+    ax.plot(eq_dates, yax, color=color, linewidth=2.5, label=label)
     ot_shifted = datetime.datetime.fromtimestamp(23*60*60. + chop1_ref)
-    ax.axvline(ot_shifted, color='k', linewidth=1., linestyle='--',
+    ax.axvline(ot_shifted, color='k', linewidth=1.5, linestyle='--',
                alpha=0.6, label='Origin time')
     ax.grid(True)
     ax.legend(loc=1)
@@ -217,8 +218,8 @@ LF = [0.075, 0.125]
 colors = {
     'VT':       '#BD2025',
     'VLP':      '#2563EB',
-    'VT+VLP':   '#FF7400',
-    'Recorded': '#22863A',
+    'VT+VLP':   '#22863A',
+    'Recorded': '#515151',
 }
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -237,10 +238,10 @@ filter_chop_plot(axs1[0,1], tr_VT_N,  LF, o_t, colors['VT'],  'VT')
 filter_chop_plot(axs1[1,0], tr_VLP_N, HF, o_t, colors['VLP'], 'VLP')
 filter_chop_plot(axs1[1,1], tr_VLP_N, LF, o_t, colors['VLP'], 'VLP')
 
-axs1[0,0].set_title(f'HF  {HF[0]}–{HF[1]} Hz', fontsize=12, fontweight='bold')
-axs1[0,1].set_title(f'LF  {LF[0]}–{LF[1]} Hz', fontsize=12, fontweight='bold')
-for row, lbl in enumerate(['VT synthetic', 'VLP synthetic']):
-    axs1[row,0].set_ylabel(f'{lbl}\nDisplacement [m]')
+axs1[0,0].set_title(f'High-Frequency  {HF[0]}–{HF[1]} Hz', fontsize=12, fontweight='bold')
+axs1[0,1].set_title(f'Low-Frequency  {LF[0]}–{LF[1]} Hz', fontsize=12, fontweight='bold')
+for row, lbl in enumerate(['VT source', 'VLP source']):
+    axs1[row,0].set_ylabel(f'{lbl}\nDisplacement [m]', fontsize=12, fontweight='bold')
 for col in range(2):
     axs1[1,col].set_xlabel('Time')
 
@@ -257,6 +258,8 @@ axs1[1,0].margins(x=0)
 fig1.suptitle(f'{e_name}  |  Station: {s_name}  |  N component',
               fontsize=11, fontweight='bold')
 fig1.tight_layout()
+
+fig1.savefig(plotdir + f'{e_name}_{s_name}_2x2_comparison.pdf', dpi=300)
 
 # ════════════════════════════════════════════════════════════════════════════════
 # FIGURE 2 — 4x1, LF only
@@ -283,7 +286,7 @@ for tr, col, lbl in traces_fig2:
     tmp.chop(o_t - 30, o_t + 150)
     all_y.append(tmp.get_ydata())
 
-global_ymax = max(np.max(np.abs(y)) for y in all_y) * 1.01
+global_ymax = max(np.max(np.abs(y)) for y in all_y) * 1.02
 
 # second pass: plot
 for i, (tr, col, lbl) in enumerate(traces_fig2):
@@ -298,10 +301,13 @@ axs2[0].set_xlim(xmin_LF, xmax_LF)
 for ax in axs2:
     ax.margins(x=0)
 
+axs2[0].set_title(f'Low-Frequency  {LF[0]}–{LF[1]} Hz', fontsize=12, fontweight='bold')
 fig2.suptitle(
     f'{e_name}  |  Station: {s_name}  |  N component  |  '
     f'LF  {LF[0]}–{LF[1]} Hz',
     fontsize=11, fontweight='bold')
 fig2.tight_layout()
+
+fig2.savefig(plotdir + f'{e_name}_{s_name}_Nord_comparison_LF.pdf', dpi=300)
 
 plt.show()
