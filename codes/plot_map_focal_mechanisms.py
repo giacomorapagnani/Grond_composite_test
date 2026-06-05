@@ -50,7 +50,7 @@ fig.grdimage(grid=topo_data, region=region, projection=projection, shading="+a45
 fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 
 #   PLOT FOCAL MECHANISM
-filename='catalogue_flegrei_composite_MT_LF_std_reloc_best'             ###CHANGE###  catalogue_flegrei_composite_MT_LF_std_reloc_best 
+filename='catalogue_flegrei_MT_VT_new'             ###CHANGE###  catalogue_flegrei_composite_MT_LF_std_reloc_best 
                                                             # catalogue_flegrei_composite_presentation
 events_name=os.path.join(catdir,filename+'.pf')              
 fm_events = model.load_events(events_name)
@@ -59,13 +59,13 @@ fm_events = model.load_events(events_name)
 ##########################################
 ############## SWITCH ##############
 ##########################################
-switch_deviatoric=True                                                                                                                               
+switch_deviatoric=False                                                                                                                               
 
 # TRUE if you want timestamps
 ##########################################
 ############## SWITCH ##############
 ##########################################
-switch_timestamps=False                                                                 
+switch_timestamps=True                                                                 
 
 
 # loop on events in catalogue and plot FM
@@ -87,7 +87,7 @@ for ev in fm_events:
             "exponent": 1                  # np.log10(mm) !!!WRONG!!!
             }
 
-        MT_white=True
+        MT_white=False
         if MT_white:
             fig.meca(spec=moment_tensor_par,convention='mt', longitude =ev.lon, latitude=ev.lat, depth=ev.depth,
                     scale="1.2c", compressionfill="white",extensionfill="white", pen="1p,black",outline="1p,black")
