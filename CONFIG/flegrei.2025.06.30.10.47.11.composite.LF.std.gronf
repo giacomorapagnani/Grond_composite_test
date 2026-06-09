@@ -13,7 +13,7 @@
 rundir_template: runs/${problem_name}.grun
 dataset_config: !grond.DatasetConfig
   stations_path: '../META_DATA/stations_flegrei_INGV_final.pf'
-  events_path: '../CAT/catalogue_flegrei_composite_reference.pf'
+  events_path: '../CAT/catalogue_flegrei_VLP.pf'
   waveform_paths: ['../DATA/${event_name}']
   responses_stationxml_paths: ['../META_DATA/stations_flegrei_INGV_final.xml']
   extend_incomplete: true
@@ -79,18 +79,18 @@ problem_config: !grond.CompositeProblemConfig
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 2081.6306 .. 4576.681
+      depth: 2789.7332 .. 4636.1947
       duration: 0.1 .. 0.1
-      east_shift: -2311.4511 .. 2885.4392
-      magnitude: 3.3853445 .. 3.6583494
-      north_shift: -3215.0188 .. -272.26212
-      rmdd: -0.59545434 .. 0.16683938
-      rmed: -0.52621271 .. 0.66172242
-      rmee: -0.022480294 .. 0.64993562
-      rmnd: -0.45324639 .. 0.6280138
-      rmne: 0.047493167 .. 0.65429359
-      rmnn: -0.41054552 .. 0.23855687
-      time: '-0.034417707 .. 0.85524396 | add'
+      east_shift: -1792.9479 .. 2981.5123
+      magnitude: 3.4549006 .. 3.6794348
+      north_shift: -3234.4988 .. -93.312856
+      rmdd: -0.71745646 .. 0.20751224
+      rmed: -0.54164364 .. 0.62388211
+      rmee: -0.12591464 .. 0.64211539
+      rmnd: -0.26383443 .. 0.67144959
+      rmne: 0.0371482 .. 0.60272596
+      rmnn: -0.37636037 .. 0.38196872
+      time: '0.010954244 .. 0.83442665 | add'
 
   - !grond.CMTSubProblemConfig
     name: vlp
