@@ -14,7 +14,7 @@ metadatadir = os.path.join(workdir, 'META_DATA')
 # ─────────────────────────────────────────────────────────────────────────────
 ELLIPSE_PEN        = "2.0p,gray10,2p_2p"   # pen: thickness, color:gray10 / #BD2025, style
 ELLIPSE_N_POINTS   = 400                    # number of points along the ellipse
-ELLIPSE_FILE_NAME       = 'uncertainty_ellipses_old.txt'  # path to the ellipse parameter file
+ELLIPSE_FILE_NAME       = 'uncertainty_ellipses.txt'  # path to the ellipse parameter file
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -131,7 +131,7 @@ fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 # ─────────────────────────────────────────────────────────────────────────────
 # LOAD EVENTS AND ELLIPSE PARAMETERS
 # ─────────────────────────────────────────────────────────────────────────────
-filename   = 'catalogue_flegrei_MT_VLP_reloc'     #CHANGE: catalogue_flegrei_composite_MT_LF_std_reloc_best
+filename   = 'catalogue_flegrei_composite_MT_LF_reloc_best'     #CHANGE: catalogue_flegrei_composite_MT_LF_std_reloc_best
                                                             # catalogue_flegrei_MT_VLP_reloc
 events_name = os.path.join(catdir, filename + '.pf')
 fm_events  = model.load_events(events_name)

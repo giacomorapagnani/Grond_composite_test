@@ -16,7 +16,7 @@ os.makedirs(plotdir, exist_ok=True)
 #  SETTINGS
 # ═══════════════════════════════════════════════════════════════
 
-filename = 'catalogue_flegrei_MT_VT'
+filename = 'catalogue_flegrei_composite_MT_LF_reloc_best'
 
 #   'local'  → Tinitaly 10 m DEM (land-only, high-res)
 #   'pygmt'  → GMT built-in 01s relief (~30 m, includes bathymetry)
@@ -46,7 +46,7 @@ color_mode  = 'depth_gray'
 fixed_color = '#606060'
 
 switch_deviatoric = True
-switch_timestamps = False
+switch_timestamps = True
 switch_sta_names  = False
 
 switch_pozzuoli = False
@@ -86,7 +86,7 @@ def depth_to_gray(depth_km):
 #  MAGNITUDE → SIZE  (M2 ≈ 0.45c, M3 ≈ 0.60c, M4 ≈ 0.75c)
 # ═══════════════════════════════════════════════════════════════
 def mag_to_size(mag):
-    return max(0.15, 0.45 + 0.15 * (mag - 2.0))
+    return max(0.10, 0.40 + 0.20 * (mag - 0.0))
 
 # ═══════════════════════════════════════════════════════════════
 #  FIGURE SETUP
