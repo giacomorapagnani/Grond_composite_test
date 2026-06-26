@@ -139,6 +139,16 @@ lat_center_sta:  40.83
 lon_center_sta:  14.14
 radius_km_sta:   50.0
 
+# ── Station source ────────────────────────────────────────────────────────────
+
+# Path to an existing StationXML to load instead of querying FDSN for stations.
+#   null        → query stations from FDSN using the station search area above
+#   "file.xml"  → bare filename: looked up inside META_DATA/
+#   "/abs/path" → absolute path used as-is
+# When set, lat_center_sta / radius_km_sta / network / station / location /
+# channel are IGNORED — the inventory is used exactly as stored in the file.
+existing_stations_xml: null    # e.g.  "stations_flegrei_INGV_final.xml"  or  null
+
 # ── Station / channel selection ───────────────────────────────────────────────
 
 # FDSN wildcards: * (any string) and ? (exactly one character).
@@ -162,18 +172,18 @@ t_after_s:  300
 # Reduce if the server returns HTTP 413 or timeout errors on large windows.
 chunk_days: 365
 
-# ── Catalog source ────────────────────────────────────────────────────────────
+# ── Download mode ─────────────────────────────────────────────────────────────
 
-# Path to an existing QuakeML (.xml) catalog to load instead of querying FDSN.
-#
-#   null          → download catalog from FDSN using the parameters above
-#   "file.xml"    → bare filename: looked up inside CAT/
-#   "/abs/path"   → absolute path used as-is
-#
-# When this is set the event-query parameters (mag_min, mag_max, depth_*,
-# area_type, tmin/tmax for events) are IGNORED for the catalog download.
-# tmin / tmax are still used for the station inventory query.
-existing_catalog_xml: null    # e.g.  "my_catalog.xml"  or  null
+# "event"      → one waveform excerpt per event (uses the catalog above)
+#                  Files: DATA/<event_label>_yyyy_mm_dd_hh_mm_ss/
+#                              <event_label>_yyyy_mm_dd_hh_mm_ss_NET_STA.mseed
+# "continuous" → full continuous stream for every station across tmin→tmax
+#                  Files: DATA/CONTINUOUS/<event_label>_yyyy_mm_dd_NET_STA.mseed
+download_mode: "event"
+
+# Size of each continuous chunk (hours).  24 = one file per day per station.
+# Only used when download_mode is "continuous".
+chunk_hours: 24
 
 # ── Map preview ───────────────────────────────────────────────────────────────
 
@@ -219,23 +229,27 @@ def print_config_summary(cfg: dict) -> None:
     print(f"  Station area    : circular  "
           f"centre ({cfg['lat_center_sta']:.4f}, {cfg['lon_center_sta']:.4f})  "
           f"radius {cfg['radius_km_sta']:.1f} km")
+    existing_sta = cfg.get('existing_stations_xml') or None
+    sta_src = f"EXISTING FILE → {existing_sta}" if existing_sta else "FDSN query"
+    print(f"  Station source  : {sta_src}")
     mag_str   = f"{cfg.get('mag_min') or '–'}  –  {cfg.get('mag_max') or '–'}"
     depth_str = (f"{cfg.get('depth_min_km') or '–'}  –  "
                  f"{cfg.get('depth_max_km') or '–'}  km")
-    print(f"  Magnitude       : {mag_str}")
-    print(f"  Depth           : {depth_str}")
+    mode = cfg.get('download_mode', 'event')
+    print(f"  ── Mode         : {mode.upper()}")
+    if mode == 'continuous':
+        print(f"  Chunk size      : {cfg.get('chunk_hours', 24)} h per file")
+    else:
+        print(f"  Magnitude       : {mag_str}")
+        print(f"  Depth           : {depth_str}")
     print(f"  Network         : {cfg['network']}   Station: {cfg['station']}")
     print(f"  Channel         : {cfg['channel']}")
-    print(f"  Waveform window : -{cfg['t_before_s']} s  /  +{cfg['t_after_s']} s")
-    print(f"  Catalog name    : {cfg['catalog_name']}")
+    if mode == 'event':
+        print(f"  Waveform window : -{cfg['t_before_s']} s  /  +{cfg['t_after_s']} s")
+        print(f"  Catalog name    : {cfg['catalog_name']}")
     print(f"  Event label     : {cfg['event_label']}")
     print(f"  Station file    : {cfg['station_file_name']}")
     print(f"  Map backend     : {cfg.get('map_backend', 'folium')}")
-    existing = cfg.get('existing_catalog_xml') or None
-    if existing:
-        print(f"  ── Catalog source : EXISTING FILE → {existing}")
-    else:
-        print(f"  ── Catalog source : FDSN query")
     print("═" * w + "\n")
 
 
@@ -310,30 +324,32 @@ def ask_modify_config(path: str, cfg: dict) -> dict:
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# 2 ─ CATALOG SOURCE
+# 2 ─ EXISTING FILE LOADERS
 # ═════════════════════════════════════════════════════════════════════════════
 
-def _resolve_xml_path(value: str) -> str:
+def _resolve_xml_path(value: str, base_dir: str) -> str:
     """Return absolute path to an XML file.
 
-    Bare filename (no path separator) → looked up in CAT/.
+    Bare filename (no path separator) → looked up in base_dir.
     Anything else → treated as an absolute or relative path.
     """
     if os.sep not in value and '/' not in value:
-        return os.path.join(CAT_DIR, value)
+        return os.path.join(base_dir, value)
     return os.path.abspath(value)
 
 
-def load_catalog_from_xml(xml_path: str) -> Catalog:
-    """Load an existing QuakeML catalog from disk."""
-    from obspy import read_events
+def load_stations_from_xml(xml_path: str):
+    """Load an existing StationXML inventory from disk."""
+    from obspy import read_inventory
     if not os.path.isfile(xml_path):
         print(f"\n  [ERROR] File not found: {xml_path}\n")
         sys.exit(1)
     print(f"  File : {xml_path}")
-    cat = read_events(xml_path)
-    print(f"  {len(cat)} events loaded.\n")
-    return cat
+    inv = read_inventory(xml_path)
+    n_sta = sum(len(net) for net in inv)
+    n_net = len(inv)
+    print(f"  {n_sta} stations across {n_net} network(s) loaded.\n")
+    return inv
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -435,6 +451,18 @@ def query_stations(client: Client, cfg: dict) -> object:
         return None
 
 
+def get_stations(client: Client, cfg: dict) -> object:
+    """Return station inventory: from an existing StationXML file or FDSN.
+
+    Controlled by config key 'existing_stations_xml'.
+    """
+    existing = cfg.get('existing_stations_xml') or None
+    if existing:
+        print("  Loading stations from existing XML …")
+        return load_stations_from_xml(_resolve_xml_path(existing, META_DIR))
+    return query_stations(client, cfg)
+
+
 # ═════════════════════════════════════════════════════════════════════════════
 # 3 ─ PREVIEW MAP
 # ═════════════════════════════════════════════════════════════════════════════
@@ -464,61 +492,74 @@ def _mag_color(mag: float) -> str:
     return _MAG_COLOR_MAP[key]
 
 
-def _build_folium_map(cat: Catalog, inv, cfg: dict):
+def _build_folium_map(cat, inv, cfg: dict):
+    """Build the folium map.  cat=None signals continuous (no-event) mode."""
     import folium
 
-    # Map centre
-    if cfg['area_type'] == 'rectangular':
+    is_continuous = (cat is None)
+
+    # Map centre: station area centre in continuous mode, event area otherwise
+    if is_continuous or cfg['area_type'] == 'circular':
+        clat = cfg['lat_center_sta'] if is_continuous else cfg['lat_center']
+        clon = cfg['lon_center_sta'] if is_continuous else cfg['lon_center']
+    else:
         clat = (cfg['lat_min'] + cfg['lat_max']) / 2
         clon = (cfg['lon_min'] + cfg['lon_max']) / 2
-    else:
-        clat = cfg['lat_center']
-        clon = cfg['lon_center']
 
     m = folium.Map(location=[clat, clon], zoom_start=9,
                    tiles='CartoDB positron')
 
-    # ── search area boundary ─────────────────────────────────────────────────
-    if cfg['area_type'] == 'rectangular':
-        folium.Rectangle(
-            bounds=[[cfg['lat_min'], cfg['lon_min']],
-                    [cfg['lat_max'], cfg['lon_max']]],
-            color='#607D8B', weight=2, dash_array='6',
-            fill=False, tooltip='Search area',
-        ).add_to(m)
-    else:
-        folium.Circle(
-            location=[cfg['lat_center'], cfg['lon_center']],
-            radius=cfg['radius_km'] * 1000,   # folium uses metres
-            color='#607D8B', weight=2, dash_array='6',
-            fill=False, tooltip='Search area',
-        ).add_to(m)
+    # ── event search area boundary (event mode only) ──────────────────────────
+    if not is_continuous:
+        if cfg['area_type'] == 'rectangular':
+            folium.Rectangle(
+                bounds=[[cfg['lat_min'], cfg['lon_min']],
+                        [cfg['lat_max'], cfg['lon_max']]],
+                color='#607D8B', weight=2, dash_array='6',
+                fill=False, tooltip='Event search area',
+            ).add_to(m)
+        else:
+            folium.Circle(
+                location=[cfg['lat_center'], cfg['lon_center']],
+                radius=cfg['radius_km'] * 1000,
+                color='#607D8B', weight=2, dash_array='6',
+                fill=False, tooltip='Event search area',
+            ).add_to(m)
 
-    # ── events ───────────────────────────────────────────────────────────────
-    ev_group = folium.FeatureGroup(name=f'Events ({len(cat)})')
-    for ev in cat:
-        try:
-            origin = ev.preferred_origin() or ev.origins[0]
-            mag    = (ev.preferred_magnitude() or ev.magnitudes[0]).mag
-        except (IndexError, AttributeError):
-            continue
-        t_str   = origin.time.strftime('%Y-%m-%d  %H:%M:%S')
-        depth_km = (origin.depth or 0.0) / 1000.0
-        popup_html = (
-            f"<b>{t_str} UTC</b><br>"
-            f"Magnitude : {mag:.1f}<br>"
-            f"Depth     : {depth_km:.1f} km<br>"
-            f"Lat / Lon : {origin.latitude:.4f} / {origin.longitude:.4f}"
-        )
-        folium.CircleMarker(
-            location=[origin.latitude, origin.longitude],
-            radius=max(4, mag * 2.5),
-            color=_mag_color(mag),
-            fill=True, fill_color=_mag_color(mag), fill_opacity=0.75,
-            popup=folium.Popup(popup_html, max_width=240),
-            tooltip=f"M {mag:.1f}",
-        ).add_to(ev_group)
-    ev_group.add_to(m)
+    # ── station search area boundary (always) ─────────────────────────────────
+    folium.Circle(
+        location=[cfg['lat_center_sta'], cfg['lon_center_sta']],
+        radius=cfg['radius_km_sta'] * 1000,
+        color='#1565C0', weight=2, dash_array='4',
+        fill=False, tooltip='Station search area',
+    ).add_to(m)
+
+    # ── events (event mode only) ──────────────────────────────────────────────
+    if not is_continuous:
+        ev_group = folium.FeatureGroup(name=f'Events ({len(cat)})')
+        for ev in cat:
+            try:
+                origin = ev.preferred_origin() or ev.origins[0]
+                mag    = (ev.preferred_magnitude() or ev.magnitudes[0]).mag
+            except (IndexError, AttributeError):
+                continue
+            t_str    = origin.time.strftime('%Y-%m-%d  %H:%M:%S')
+            depth_km = (origin.depth or 0.0) / 1000.0
+            popup_html = (
+                f"<b>{t_str} UTC</b><br>"
+                f"Magnitude : {mag:.1f}<br>"
+                f"Depth     : {depth_km:.1f} km<br>"
+                f"Lat / Lon : {origin.latitude:.4f} / {origin.longitude:.4f}"
+            )
+            folium.CircleMarker(
+                location=[origin.latitude, origin.longitude],
+                radius=max(4, mag * 2.5),
+                color=_mag_color(mag),
+                fill=True, fill_color=_mag_color(mag), fill_opacity=0.75,
+                popup=folium.Popup(popup_html, max_width=240),
+                tooltip=f"M {mag:.1f}",
+            ).add_to(ev_group)
+        ev_group.add_to(m)
 
     # ── stations (CSS triangle marker) ───────────────────────────────────────
     n_sta = sum(len(net) for net in inv) if inv else 0
@@ -554,18 +595,42 @@ def _build_folium_map(cat: Catalog, inv, cfg: dict):
 
     folium.LayerControl(collapsed=False).add_to(m)
 
-    # ── legend (built dynamically from _MAG_COLOR_MAP) ───────────────────────
-    rows = ''
-    for m_int, color in sorted(_MAG_COLOR_MAP.items()):
-        label = (f'M ≥ {m_int}' if m_int == _MAG_COLOR_MAX_KEY
-                 else f'M {m_int}')
-        rows += (f'<span style="color:{color};font-size:16px">●</span>'
-                 f'&nbsp;{label}<br>\n')
-    rows += (f'<span style="color:{_MAG_COLOR_OVERFLOW};font-size:16px">●</span>'
-             f'&nbsp;M ≥ {_MAG_COLOR_MAX_KEY + 1}<br>\n')
-    rows += '<span style="color:#1565C0;font-size:16px">▲</span>&nbsp;Station'
-
-    legend_html = f"""
+    # ── bottom-left panel: magnitude legend OR continuous info ────────────────
+    if is_continuous:
+        n_sta   = sum(len(net) for net in inv) if inv else 0
+        t0      = UTCDateTime(cfg['tmin'])
+        t1_end  = UTCDateTime(cfg['tmax'])
+        n_days  = max(1, int((t1_end - t0) / 86400))
+        ch      = cfg.get('chunk_hours', 24)
+        n_files = n_sta * int(n_days * 24 / ch)
+        panel_html = f"""
+    <div style="
+        position: fixed; bottom: 30px; left: 30px; z-index: 1000;
+        background: white; padding: 12px 16px; border-radius: 8px;
+        border: 1px solid #ccc; font-size: 12px; line-height: 1.9;
+        box-shadow: 2px 2px 6px rgba(0,0,0,.2);">
+      <b>Continuous download</b><br>
+      {cfg['tmin'][:10]} → {cfg['tmax'][:10]}<br>
+      Stations  : {n_sta}<br>
+      Chunk     : {ch} h / file<br>
+      Est. files: ~{n_files}<br>
+      <span style="color:#1565C0;font-size:16px">▲</span>&nbsp;Station<br>
+      <span style="color:#1565C0">─ ─</span>&nbsp;Station search area
+    </div>"""
+        m.get_root().html.add_child(folium.Element(panel_html))
+    else:
+        rows = ''
+        for m_int, color in sorted(_MAG_COLOR_MAP.items()):
+            label = (f'M ≥ {m_int}' if m_int == _MAG_COLOR_MAX_KEY
+                     else f'M {m_int}')
+            rows += (f'<span style="color:{color};font-size:16px">●</span>'
+                     f'&nbsp;{label}<br>\n')
+        rows += (f'<span style="color:{_MAG_COLOR_OVERFLOW};font-size:16px">●</span>'
+                 f'&nbsp;M ≥ {_MAG_COLOR_MAX_KEY + 1}<br>\n')
+        rows += ('<span style="color:#1565C0;font-size:16px">▲</span>&nbsp;Station<br>\n'
+                 '<span style="color:#607D8B">─ ─</span>&nbsp;Event area&nbsp;&nbsp;'
+                 '<span style="color:#1565C0">─ ─</span>&nbsp;Station area')
+        legend_html = f"""
     <div style="
         position: fixed; bottom: 30px; left: 30px; z-index: 1000;
         background: white; padding: 12px 16px; border-radius: 8px;
@@ -574,7 +639,7 @@ def _build_folium_map(cat: Catalog, inv, cfg: dict):
       <b>Legend</b><br>
       {rows}
     </div>"""
-    m.get_root().html.add_child(folium.Element(legend_html))
+        m.get_root().html.add_child(folium.Element(legend_html))
 
     return m
 
@@ -865,6 +930,78 @@ def download_waveforms(pf_events: list, inv, client: Client, cfg: dict) -> None:
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# 7 ─ CONTINUOUS WAVEFORM DOWNLOAD
+# ═════════════════════════════════════════════════════════════════════════════
+
+def download_continuous(inv, client: Client, cfg: dict) -> None:
+    """Download continuous waveforms in fixed-size time chunks.
+
+    Output: DATA/CONTINUOUS/{event_label}_yyyy_mm_dd_{NET}_{STA}.mseed
+    Files already on disk are skipped (resumable).
+    """
+    if inv is None:
+        print("  [SKIP] No inventory – cannot download waveforms.")
+        return
+
+    tmin  = UTCDateTime(cfg['tmin'])
+    tmax  = UTCDateTime(cfg['tmax'])
+    chunk = cfg.get('chunk_hours', 24) * 3600   # seconds
+    label = cfg['event_label']
+    chan  = cfg['channel']
+
+    cont_dir = os.path.join(DATA_DIR, 'CONTINUOUS')
+    os.makedirs(cont_dir, exist_ok=True)
+
+    n_dl   = 0
+    n_skip = 0
+    n_err  = 0
+
+    t1 = tmin
+    while t1 < tmax:
+        t2       = min(t1 + chunk, tmax)
+        date_str = t1.strftime('%Y_%m_%d')   # used in filename
+        print(f"\n  [{t1.strftime('%Y-%m-%d  %H:%M')} → {t2.strftime('%H:%M')}]")
+
+        for net in inv:
+            for sta in net:
+                fname    = f"{label}_{date_str}_{net.code}_{sta.code}.mseed"
+                out_path = os.path.join(cont_dir, fname)
+
+                if os.path.isfile(out_path):
+                    print(f"  [SKIP]   {net.code}.{sta.code}  (already on disk)")
+                    n_skip += 1
+                    continue
+
+                try:
+                    st = client.get_waveforms(
+                        network=net.code, station=sta.code,
+                        location='*', channel=chan,
+                        starttime=t1, endtime=t2,
+                    )
+                    if len(st) == 0:
+                        print(f"  [EMPTY]  {net.code}.{sta.code}")
+                        continue
+                    st.write(out_path, format='MSEED')
+                    print(f"  [OK]     {net.code}.{sta.code}  ({len(st)} trace(s))")
+                    n_dl += 1
+                except Exception as exc:
+                    msg = str(exc)
+                    if 'No data' in msg or '204' in msg:
+                        print(f"  [–]      {net.code}.{sta.code}  no data")
+                    else:
+                        print(f"  [ERR]    {net.code}.{sta.code}  {msg}")
+                        n_err += 1
+
+        t1 = t2
+
+    print(f"\n{'─' * 54}")
+    print(f"  Files downloaded : {n_dl}")
+    print(f"  Files skipped    : {n_skip}  (already on disk)")
+    print(f"  Errors           : {n_err}")
+    print(f"{'─' * 54}\n")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # MAIN
 # ═════════════════════════════════════════════════════════════════════════════
 
@@ -925,55 +1062,98 @@ def main() -> None:
         event_client = client
     print()
 
-    # ── 3. Events: from existing XML file OR from FDSN ────────────────────────
-    existing_xml = cfg.get('existing_catalog_xml') or None
-    if existing_xml:
-        print(f"[STEP 1/4]  Loading catalog from existing XML …")
-        cat = load_catalog_from_xml(_resolve_xml_path(existing_xml))
-    else:
+    mode = cfg.get('download_mode', 'event')
+
+    # ══════════════════════════════════════════════════════════════════════════
+    if mode == 'continuous':
+    # ══════════════════════════════════════════════════════════════════════════
+
+        # ── 3. Stations ───────────────────────────────────────────────────────
+        print(f"[STEP 1/3]  Loading station inventory …")
+        inv   = get_stations(client, cfg)
+        n_sta = sum(len(net) for net in inv) if inv else 0
+
+        # ── 4. Preview map (stations only) ────────────────────────────────────
+        print(f"[STEP 2/3]  Building preview map "
+              f"({cfg.get('map_backend', 'folium')}) …\n")
+        show_preview_map(None, inv, cfg)   # cat=None → continuous map
+
+        # ── 5. Confirmation ───────────────────────────────────────────────────
+        chunk_h = cfg.get('chunk_hours', 24)
+        tspan   = UTCDateTime(cfg['tmax']) - UTCDateTime(cfg['tmin'])
+        n_days  = max(1, int(tspan / 86400))
+        est     = n_sta * int(n_days * 24 / chunk_h)
+        print(f"\n  Summary before download:")
+        print(f"    Mode      : CONTINUOUS")
+        print(f"    Period    : {cfg['tmin']}  →  {cfg['tmax']}  ({n_days} days)")
+        print(f"    Stations  : {n_sta}")
+        print(f"    Chunk     : {chunk_h} h / file   (~{est} files total)")
+        print(f"    Output    : {os.path.join(DATA_DIR, 'CONTINUOUS')}\n")
+
+        ans = input("  Proceed with download? [y/N]: ").strip().lower()
+        if ans != 'y':
+            print("\n  Aborted. Nothing was saved.\n")
+            sys.exit(0)
+
+        # ── 6. Save stations + download ───────────────────────────────────────
+        print(f"\n{'─' * w}")
+        print("  Saving station metadata …")
+        save_stations(inv, cfg)
+
+        print(f"\n{'─' * w}")
+        print(f"[STEP 3/3]  Downloading continuous waveforms …")
+        download_continuous(inv, client, cfg)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    else:   # mode == 'event'
+    # ══════════════════════════════════════════════════════════════════════════
+
+        # ── 3. Events: query FDSN ─────────────────────────────────────────────
         ev_site_label = ev_site if ev_site else cfg['fdsn_site']
         print(f"[STEP 1/4]  Querying event catalog from {ev_site_label} …")
         cat = query_events(event_client, cfg)
 
-    print(f"[STEP 2/4]  Querying station inventory …")
-    inv = query_stations(client, cfg)
+        if len(cat) == 0:
+            print("\n  No events found. Check your parameters and try again.\n")
+            sys.exit(0)
 
-    if len(cat) == 0:
-        print("\n  No events found. Check your parameters and try again.\n")
-        sys.exit(0)
+        # ── 4. Stations ───────────────────────────────────────────────────────
+        print(f"[STEP 2/4]  Loading station inventory …")
+        inv   = get_stations(client, cfg)
+        n_sta = sum(len(net) for net in inv) if inv else 0
 
-    # ── 4. Preview map ────────────────────────────────────────────────────────
-    n_sta = sum(len(net) for net in inv) if inv else 0
-    print(f"[STEP 4/4]  Building preview map "
-          f"({cfg.get('map_backend', 'folium')}) …\n")
-    show_preview_map(cat, inv, cfg)
+        # ── 5. Preview map ────────────────────────────────────────────────────
+        print(f"[STEP 3/4]  Building preview map "
+              f"({cfg.get('map_backend', 'folium')}) …\n")
+        show_preview_map(cat, inv, cfg)
 
-    # ── 5. User confirmation ──────────────────────────────────────────────────
-    print(f"\n  Summary before download:")
-    print(f"    Events   : {len(cat)}")
-    print(f"    Stations : {n_sta}")
-    print(f"    Waveform window : -{cfg['t_before_s']} s  /  +{cfg['t_after_s']} s")
-    print(f"    Output   : {WORK_DIR}\n")
+        # ── 6. Confirmation ───────────────────────────────────────────────────
+        print(f"\n  Summary before download:")
+        print(f"    Mode      : EVENT")
+        print(f"    Events    : {len(cat)}")
+        print(f"    Stations  : {n_sta}")
+        print(f"    Window    : -{cfg['t_before_s']} s  /  +{cfg['t_after_s']} s")
+        print(f"    Output    : {WORK_DIR}\n")
 
-    ans = input("  Proceed with download? [y/N]: ").strip().lower()
-    if ans != 'y':
-        print("\n  Aborted. Nothing was saved.\n")
-        sys.exit(0)
+        ans = input("  Proceed with download? [y/N]: ").strip().lower()
+        if ans != 'y':
+            print("\n  Aborted. Nothing was saved.\n")
+            sys.exit(0)
 
-    # ── 6. Save catalog ───────────────────────────────────────────────────────
-    print(f"\n{'─' * w}")
-    print("  Saving catalog …")
-    pf_events = save_catalog(cat, cfg)
+        # ── 7. Save catalog ───────────────────────────────────────────────────
+        print(f"\n{'─' * w}")
+        print("  Saving catalog …")
+        pf_events = save_catalog(cat, cfg)
 
-    # ── 7. Save station metadata ──────────────────────────────────────────────
-    print(f"\n{'─' * w}")
-    print("  Saving station metadata …")
-    save_stations(inv, cfg)
+        # ── 8. Save stations ──────────────────────────────────────────────────
+        print(f"\n{'─' * w}")
+        print("  Saving station metadata …")
+        save_stations(inv, cfg)
 
-    # ── 8. Download waveforms ─────────────────────────────────────────────────
-    print(f"\n{'─' * w}")
-    print("  Downloading waveforms …")
-    download_waveforms(pf_events, inv, client, cfg)
+        # ── 9. Download event waveforms ───────────────────────────────────────
+        print(f"\n{'─' * w}")
+        print(f"[STEP 4/4]  Downloading event waveforms …")
+        download_waveforms(pf_events, inv, client, cfg)
 
     print(f"{'═' * w}")
     print("  All done.\n")

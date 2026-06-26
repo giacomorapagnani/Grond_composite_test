@@ -17,12 +17,10 @@ events=(
 #  "flegrei_2025_03_14_18_44_10"
 #  "flegrei_2025_06_30_10_47_11"
 #  "flegrei_2025_07_18_07_14_22"
-  "flegrei_2025_08_28_19_53_23"
-#  "flegrei_2025_09_01_08_24_22"
+#  "flegrei_2025_08_28_19_53_23"
 #  "flegrei_2025_09_01_15_22_01"
-  "flegrei_2025_10_12_13_35_50"
-#  "flegrei_2025_10_25_22_51_49"
-  "flegrei_2026_05_21_03_50_52"
+#  "flegrei_2025_10_12_13_35_50"
+#  "flegrei_2026_05_21_03_50_52"
 )
 
 echo "Composite STD parameters LF reports" >> errors.log

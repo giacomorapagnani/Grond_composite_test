@@ -16,13 +16,15 @@ os.makedirs(plotdir, exist_ok=True)
 #  SETTINGS
 # ═══════════════════════════════════════════════════════════════
 
-filename = 'catalogue_flegrei_composite_MT_LF_reloc_best'
+filename = 'catalogue_flegrei_composite_MT_LF_std_reloc_best'
+# catalogue_flegrei_composite_MT_LF_std_reloc_best
+# catalogue_flegrei_MT_VT
 
 #   'local'  → Tinitaly 10 m DEM (land-only, high-res)
 #   'pygmt'  → GMT built-in 01s relief (~30 m, includes bathymetry)
 topo_source = 'local'
 tif_path    = '/Users/giaco/UNI/PhD_CODE/QGIS/topo_flegrei/w45090_s10.tif'
-water_color = "#8F9396"   # sea / NaN colour — change freely
+water_color = "#A9B0B8"   # sea / NaN colour — change freely
 
 # Topography colour palette (tones + hillshading).
 # Built-in presets — pick one or write a custom "color1,color2" string.
@@ -40,13 +42,28 @@ _TOPO_PRESETS = {
     'sand':  ('ivory,tan',          False),  # pale ivory → warm tan
 }
 
-#   'depth_gray'  → grayscale by depth (shallow = light, deep = dark)
+#   'depth_color' → colour gradient by depth (palette set by meca_color)
 #   'fixed'       → uniform fill set by fixed_color
-color_mode  = 'depth_gray'
+color_mode  = 'depth_color'
 fixed_color = '#606060'
 
+# Focal mechanism colour palette (only used when color_mode == 'depth_color').
+#   'gray' | 'blue' | 'red' | 'green' | 'brown' | 'purple'
+# Or pass a custom (light_rgb, dark_rgb) tuple, e.g. meca_color = ((255,235,205),(139,69,19))
+meca_color = 'black'
+
+_MECA_PRESETS = {
+    'gray':   ((205, 205, 205), (50,  50,  50)),    # shallow → deep
+    'blue':   ((198, 219, 239), (8,   81,  156)),
+    'red':    ((252, 187, 161), (165, 15,  21)),
+    'green':  ((199, 233, 192), (0,   109, 44)),
+    'brown':  ((253, 208, 162), (140, 81,  10)),
+    'purple': ((218, 218, 235), (84,  39,  143)),
+    'black':  ((255, 255, 255), (0,   0,   0)),
+}
+
 switch_deviatoric = True
-switch_timestamps = True
+switch_timestamps = False
 switch_sta_names  = False
 
 switch_pozzuoli = False
@@ -69,24 +86,26 @@ fm_events = model.load_events(os.path.join(catdir, filename + '.pf'))
 fm_events = [ev for ev in fm_events if ev.moment_tensor is not None]
 
 depths_km = np.array([ev.depth / 1000 for ev in fm_events])
-depth_min = max(0.0, depths_km.min() - 0.3)
-depth_max = depths_km.max() + 0.3
+depth_min = max(0.0, depths_km.min() - 1.0)
+depth_max = depths_km.max() + 1.0
 
 # ═══════════════════════════════════════════════════════════════
-#  DEPTH → GREY  (pure Python, independent of GMT CPT state)
-#  shallow → light grey (200/200/200),  deep → dark grey (50/50/50)
+#  DEPTH → COLOUR  (pure Python, independent of GMT CPT state)
+#  shallow → light tone,  deep → dark tone  (palette set by meca_color)
 # ═══════════════════════════════════════════════════════════════
-def depth_to_gray(depth_km):
+def depth_to_color(depth_km):
+    light, dark = meca_color if isinstance(meca_color, tuple) \
+        else _MECA_PRESETS.get(meca_color, _MECA_PRESETS['gray'])
     t = np.clip((depth_km - depth_min) / (depth_max - depth_min), 0.0, 1.0)
-    g = int(round(200 - t * 150))   # 200 (light) → 50 (dark)
-    return f"{g}/{g}/{g}"
+    rgb = [round(light[i] + t * (dark[i] - light[i])) for i in range(3)]
+    return f"{rgb[0]}/{rgb[1]}/{rgb[2]}"
 
 
 # ═══════════════════════════════════════════════════════════════
 #  MAGNITUDE → SIZE  (M2 ≈ 0.45c, M3 ≈ 0.60c, M4 ≈ 0.75c)
 # ═══════════════════════════════════════════════════════════════
 def mag_to_size(mag):
-    return max(0.10, 0.40 + 0.20 * (mag - 0.0))
+    return max(0.20, 0.40 + 0.20 * (mag))
 
 # ═══════════════════════════════════════════════════════════════
 #  FIGURE SETUP
@@ -133,12 +152,6 @@ else:   # identical to original script 11
     fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 
 # ═══════════════════════════════════════════════════════════════
-#  DEPTH COLORBAR
-#  We write the CPT ourselves and pass the file explicitly to
-#  fig.colorbar() — this bypasses all GMT internal CPT state issues.
-# ═══════════════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════════════
 #  FOCAL MECHANISMS
 #  compressionfill is computed from depth in Python — no GMT CPT needed.
 # ═══════════════════════════════════════════════════════════════
@@ -162,7 +175,7 @@ for ev in fm_events:
         }
         convention = 'aki'
 
-    fill = depth_to_gray(ev.depth / 1000) if color_mode == 'depth_gray' else fixed_color
+    fill = depth_to_color(ev.depth / 1000) if color_mode == 'depth_color' else fixed_color
 
     fig.meca(
         spec=spec, convention=convention,
@@ -203,10 +216,13 @@ x0_c    = box_x0 + 0.003
 y_circ  = box_y0 + box_h * 0.52
 y_label = box_y0 + box_h * 0.13
 
+legend_fill = depth_to_color((depth_min + depth_max) / 2) \
+    if color_mode == 'depth_color' else fixed_color
+
 for i, rm in enumerate(ref_mags):
     xc = x0_c + i * dx_deg
     fig.plot(x=xc, y=y_circ, style=f"c{mag_to_size(rm):.2f}c",
-             fill="gray50", pen="0.4p,black")
+             fill=legend_fill, pen="0.4p,black")
     fig.text(text=f"{int(rm)} Mw", x=xc, y=y_label,
              font="4p,Helvetica,black", justify="CM")
 
@@ -239,7 +255,7 @@ if switch_sta_names:
 #    4. gradient rectangles fill the interior (ticks stay visible outside)
 #    5. shift_origin restore
 # ═══════════════════════════════════════════════════════════════
-if color_mode == 'depth_gray':
+if color_mode == 'depth_color':
     cb_w   = 5.0    # colorbar width  (cm)
     cb_h   = 0.45   # colorbar strip height (cm)
     n_grad = 200    # gradient steps
@@ -284,11 +300,10 @@ if color_mode == 'depth_gray':
         t1 = (i + 1) / n_grad
         z0 = depth_min + t0 * (depth_max - depth_min)
         z1 = depth_min + t1 * (depth_max - depth_min)
-        g  = int(200 - t0 * 150)
         fig.plot(
             x=[z0, z1, z1, z0, z0],
             y=[0,  0,  1,  1,  0],
-            fill=f"{g}/{g}/{g}",
+            fill=depth_to_color(z0),
             pen="0p",
         )
 
