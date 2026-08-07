@@ -20,6 +20,7 @@ ELLIPSE_FILE_NAME       = 'uncertainty_ellipses.txt'  # path to the ellipse para
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LOAD UNCERTAINTY ELLIPSES
+# lat & lon values must match the ones loaded in the config files as references
 # columns: event_name lat_event lon_event east_shift_16 east_shift_84
 #          nord_shift_16 nord_shift_84   (shifts in metres)
 # ─────────────────────────────────────────────────────────────────────────────

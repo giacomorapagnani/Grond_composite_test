@@ -63,7 +63,7 @@ _MECA_PRESETS = {
 }
 
 switch_deviatoric = True
-switch_timestamps = False
+switch_timestamps = True
 switch_sta_names  = False
 
 switch_pozzuoli = False
