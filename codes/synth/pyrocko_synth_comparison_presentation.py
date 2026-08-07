@@ -25,10 +25,10 @@ plotdir     = '../../PLOTS/SYNTH/'
 stations_name = os.path.join(metadatadir, 'stations_flegrei_INGV_final.pf')
 stations      = model.load_stations(stations_name)
 
-catname_VLP = os.path.join(catdir, 'catalogue_flegrei_test_VLP.pf')
+catname_VLP = os.path.join(catdir, 'catalogue_flegrei_comparison_composite_VLP.pf')
 events_VLP  = model.load_events(catname_VLP)
 
-catname_VT = os.path.join(catdir, 'catalogue_flegrei_test_VT.pf')
+catname_VT = os.path.join(catdir, 'catalogue_flegrei_comparison_composite_VT.pf')
 events_VT  = model.load_events(catname_VT)
 
 # ── select station ────────────────────────────────────────────────────────────
