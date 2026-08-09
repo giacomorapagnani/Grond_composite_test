@@ -438,3 +438,25 @@ rake2 = -136.605
 duration = 27.5185
 tags = sub-problem:vlp, frequency:0.11568617
 --------------------------------------------
+name = flegrei_2026_07_31_20_00_09
+time = 2026-07-31 20:00:09.160
+latitude = 40.8184633247
+longitude = 14.1387460139
+magnitude = 2.16399
+moment = 1.97688e+12
+depth = 3916.3913
+mnn = -1.76718e+11
+mee = 1.37468e+12
+mdd = -4.93021e+11
+mne = 2.44281e+11
+mnd = 2.2244e+11
+med = 1.6483e+12
+strike1 = 352.401
+dip1 = 75.1044
+rake1 = -89.0837
+strike2 = 168.841
+dip2 = 14.9231
+rake2 = -93.4404
+duration = 34.0551
+tags = sub-problem:vlp, frequency:0.11462991
+--------------------------------------------
