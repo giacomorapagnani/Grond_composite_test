@@ -50,7 +50,7 @@ fixed_color = '#606060'
 # Focal mechanism colour palette (only used when color_mode == 'depth_color').
 #   'gray' | 'blue' | 'red' | 'green' | 'brown' | 'purple'
 # Or pass a custom (light_rgb, dark_rgb) tuple, e.g. meca_color = ((255,235,205),(139,69,19))
-meca_color = 'black'
+meca_color = 'red'
 
 _MECA_PRESETS = {
     'gray':   ((205, 205, 205), (50,  50,  50)),    # shallow → deep
@@ -105,7 +105,7 @@ def depth_to_color(depth_km):
 #  MAGNITUDE → SIZE  (M2 ≈ 0.45c, M3 ≈ 0.60c, M4 ≈ 0.75c)
 # ═══════════════════════════════════════════════════════════════
 def mag_to_size(mag):
-    return max(0.20, 0.40 + 0.20 * (mag))
+    return max(0.60, 1.0 + 0.10 * (mag))
 
 # ═══════════════════════════════════════════════════════════════
 #  FIGURE SETUP

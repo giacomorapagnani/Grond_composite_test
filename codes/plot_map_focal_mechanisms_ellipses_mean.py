@@ -132,7 +132,7 @@ fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 # ─────────────────────────────────────────────────────────────────────────────
 # LOAD EVENTS AND ELLIPSE PARAMETERS
 # ─────────────────────────────────────────────────────────────────────────────
-filename   = 'catalogue_flegrei_composite_MT_LF_std_reloc_best'     #CHANGE: catalogue_flegrei_composite_MT_LF_std_reloc_best
+filename   = 'catalogue_flegrei_composite_MT_LF_std_reloc_best_FLIPPED'     #CHANGE: catalogue_flegrei_composite_MT_LF_std_reloc_best
                                                             # catalogue_flegrei_MT_VLP_reloc
 events_name = os.path.join(catdir, filename + '.pf')
 fm_events  = model.load_events(events_name)
