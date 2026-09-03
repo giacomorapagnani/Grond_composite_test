@@ -1,3 +1,5 @@
 - CAT: catalogue_flegrei_composite_MT_LF_std_reloc_best.pf has first events inverted with reference location of VLP single-sorce solution.
     REMEMBER to check location and keep the old ones with the old values
 - SAME FOR: uncertainty_ellipses.txt
+
+uncertanty ellipse of 2018 VLP event was excluded

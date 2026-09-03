@@ -1,26 +1,58 @@
-import pygmt
-import numpy as np
+"""
+Map of Campi Flegrei focal mechanisms.
+
+Layers, drawn bottom → top:
+    topography → uncertainty ellipses → VT circles → beach balls
+    → magnitude legend → stations → depth colorbar
+
+Everything meant to be tuned lives in the USER SETTINGS block below; nothing
+below the "END OF USER SETTINGS" line needs to be touched for routine changes.
+Run from inside `codes/` (all paths are relative to it).
+"""
+
 import os
-import xarray as xr
+
+import numpy as np
+import pygmt
 import rioxarray
+import xarray as xr
 from pyrocko import model
 import pyrocko.moment_tensor as pmt
 import pyrocko.orthodrome as od
 
-workdir = '../'
-catdir = os.path.join(workdir, 'CAT')
-metadatadir = os.path.join(workdir, 'META_DATA')
-plotdir = os.path.join(workdir, 'PLOTS', 'MAPS')
-os.makedirs(plotdir, exist_ok=True)
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║                            USER SETTINGS                                  ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
 
 # ═══════════════════════════════════════════════════════════════
-#  SETTINGS
+#  1 · PATHS AND INPUT CATALOGUE
 # ═══════════════════════════════════════════════════════════════
+workdir      = '../'
+catdir       = os.path.join(workdir, 'CAT')
+metadatadir  = os.path.join(workdir, 'META_DATA')
+plotdir      = os.path.join(workdir, 'PLOTS', 'MAPS')
 
+# Catalogue whose moment tensors are drawn as beach balls (no .pf extension).
+#   catalogue_flegrei_composite_MT_LF_std_reloc_best_FLIPPED
+#   catalogue_flegrei_composite_MT_LF_std_reloc_best
+#   catalogue_flegrei_MT_VT
 filename = 'catalogue_flegrei_composite_MT_LF_std_reloc_best_FLIPPED'
-# catalogue_flegrei_composite_MT_LF_std_reloc_best
-# catalogue_flegrei_MT_VT
 
+STATION_FILE = 'stations_flegrei_INGV_final.pf'   # inside metadatadir
+
+# ═══════════════════════════════════════════════════════════════
+#  2 · MAP AREA AND PROJECTION
+# ═══════════════════════════════════════════════════════════════
+#   True  → tight zoom on Pozzuoli
+#   False → whole gulf
+switch_pozzuoli = False
+
+MAP_WIDTH_IN = 6          # Mercator map width, inches (drives the whole layout)
+
+# ═══════════════════════════════════════════════════════════════
+#  3 · TOPOGRAPHY
+# ═══════════════════════════════════════════════════════════════
 #   'local'  → Tinitaly 10 m DEM (land-only, high-res)
 #   'pygmt'  → GMT built-in 01s relief (~30 m, includes bathymetry)
 topo_source = 'local'
@@ -28,13 +60,158 @@ tif_path    = '/Users/giaco/UNI/PhD_CODE/QGIS/topo_flegrei/w45090_s10.tif'
 water_color = "#A9B0B8"   # sea / NaN colour — change freely
 
 # Topography colour palette (tones + hillshading).
-# Built-in presets — pick one or write a custom "color1,color2" string.
 #   'gray'   → classic black-and-white
 #   'brown'  → soft cream → warm sienna
 #   'green'  → light mint → olive
 #   'sand'   → pale ivory → dark tan
-# You can also pass any GMT two-color gradient, e.g. 'lightyellow,chocolate'
+# Any GMT two-colour gradient also works, e.g. 'lightyellow,chocolate'.
 topo_color = 'gray'
+
+# ═══════════════════════════════════════════════════════════════
+#  4 · FOCAL MECHANISMS (BEACH BALLS)
+# ═══════════════════════════════════════════════════════════════
+#   True  → plot the full deviatoric tensor
+#   False → plot the double-couple nodal plane 1 (strike/dip/rake)
+switch_deviatoric = True
+
+#   'depth_color' → colour gradient by depth (palette set by meca_color)
+#   'fixed'       → uniform fill set by fixed_color
+color_mode  = 'fixed'
+fixed_color = '#BD2025'
+
+# Beach-ball palette, only used when color_mode == 'depth_color'.
+#   'gray' | 'blue' | 'red' | 'green' | 'brown' | 'purple' | 'black'
+# A custom (light_rgb, dark_rgb) tuple also works,
+# e.g. meca_color = ((255, 235, 205), (139, 69, 19))
+meca_color = 'red'
+
+# ═══════════════════════════════════════════════════════════════
+#  5 · VT EVENT CIRCLES
+#  One circle per event of an extra catalogue, radius scaling with magnitude.
+#  Meant for the VT seismicity plotted underneath the beach balls.
+# ═══════════════════════════════════════════════════════════════
+switch_vt_circles = True                          # master on/off switch
+
+VT_FILE_NAME = 'catalogue_flegrei_MT_VT.pf'       # inside catdir
+
+# Circle colour — any GMT colour: 'black', 'gray30', '#BD2025', '255/0/0' …
+VT_COLOR = 'gray90'
+
+#   'filled'  → solid disc, no border
+#   'outline' → empty circle, coloured border only
+#   'both'    → solid disc + border
+VT_MODE = 'both'
+
+VT_PEN_WIDTH = '0.8p'      # border thickness ('outline' and 'both')
+VT_PEN_COLOR = 'black'     # border colour used by 'both' ('outline' uses VT_COLOR)
+VT_ALPHA     = 0           # 0 = opaque, 100 = invisible
+
+# Radius vs magnitude.
+#   'meca'   → same diameter a beach ball of that Mw would get, so circles and
+#              beach balls are directly comparable in size
+#   'linear' → diameter_cm = VT_SIZE_BASE_CM + VT_SIZE_SLOPE_CM * Mw
+VT_SIZE_MODE   = 'meca'
+VT_SIZE_FACTOR = 0.40      # global multiplier: 1.0 = exactly beach-ball size
+VT_SIZE_BASE_CM  = 0.05    # 'linear' mode only
+VT_SIZE_SLOPE_CM = 0.30    # 'linear' mode only
+
+#   False → circles below the beach balls (default, keeps mechanisms readable)
+#   True  → circles on top of the beach balls
+VT_ON_TOP = False
+
+# ═══════════════════════════════════════════════════════════════
+#  6 · UNCERTAINTY ELLIPSES
+#  Drawn BEFORE the beach balls, so they stay underneath.
+# ═══════════════════════════════════════════════════════════════
+#   'outline' → dashed border only
+#   'filled'  → semi-transparent solid fill
+#   'both'    → transparent fill + dashed border
+#   'none'    → ellipses switched off
+ELLIPSE_MODE = 'none'
+
+# Any GMT colour ('gray40', 'black', '#BD2025', '255/0/0' …).
+# Special value 'depth' → each ellipse takes the depth colour of its beach ball.
+ELLIPSE_COLOR = '#BD2025'
+
+# Fill transparency: 0 = opaque, 100 = invisible. 70–85 works well when many
+# ellipses overlap.
+ELLIPSE_ALPHA = 85
+
+ELLIPSE_PEN_WIDTH = '0.8p'      # border thickness
+ELLIPSE_DASH      = '4p_3p'     # dash pattern: 'solid' for a continuous line
+ELLIPSE_N_POINTS  = 400         # points used to trace each ellipse
+ELLIPSE_FILE_NAME = 'uncertainty_ellipses.txt'    # inside catdir
+
+# Reference ("mean") ellipse drawn in the bottom-left corner as a size legend.
+switch_mean_ellipse     = True
+MEAN_ELLIPSE_OFFSET_LON = 0.015   # degrees from minlon
+MEAN_ELLIPSE_OFFSET_LAT = 0.015   # degrees from minlat
+
+# ═══════════════════════════════════════════════════════════════
+#  7 · ANNOTATIONS
+# ═══════════════════════════════════════════════════════════════
+switch_timestamps = False    # date/time label next to every beach ball
+switch_sta_names  = False    # station code next to every station triangle
+
+# ═══════════════════════════════════════════════════════════════
+#  8 · STATIONS
+# ═══════════════════════════════════════════════════════════════
+STA_STYLE = 't0.3c'        # GMT symbol: t = triangle, 0.3c = size
+STA_FILL  = '#FFCC4E'
+STA_PEN   = '0.6p,black'
+
+# ═══════════════════════════════════════════════════════════════
+#  9 · LEGEND (top-left box)
+#  Two independent magnitude scales, stacked, plus the station symbol:
+#    · beach balls (VLP) — circles sized exactly as the beach balls on the map
+#    · VT circles        — circles sized by vt_diameter_cm()
+#  The two scales are unrelated on purpose: each row shows the size its own
+#  symbol really gets on the map.
+# ═══════════════════════════════════════════════════════════════
+LEG_SHOW_MECA = True                      # magnitude scale of the beach balls
+LEG_MECA_TITLE = 'VLP'
+ref_mags_meca  = [1.0, 2.0, 3.0]
+
+LEG_SHOW_VT   = True                      # magnitude scale of the VT circles
+LEG_VT_TITLE  = 'VT'                      # (skipped when switch_vt_circles is off)
+ref_mags_vt   = [1.0, 2.0, 3.0, 4.0]
+
+LEG_SHOW_STATION  = True                  # station triangle + label row
+LEG_STATION_LABEL = 'stations'
+
+LEG_PAD        = 0.16    # cm — inner padding of the box
+LEG_GAP        = 0.20    # cm — clear space between two circles
+LEG_MIN_STEP   = 0.62    # cm — min centre-to-centre distance (keeps labels apart)
+LEG_TITLE_H    = 0.34    # cm — row reserved for each scale title
+LEG_LABEL_H    = 0.32    # cm — row reserved for the labels under the circles
+LEG_STATION_H  = 0.40    # cm — row reserved for the station symbol
+LEG_SYM_GAP    = 0.10    # cm — space between station symbol and its label
+LEG_MARGIN     = 0.10    # cm — distance from the map frame
+LEG_FONT_TITLE = "5p,Helvetica-Bold,black"
+LEG_FONT_LABEL = "4.5p,Helvetica,black"
+
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║                        END OF USER SETTINGS                               ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+# ═══════════════════════════════════════════════════════════════
+#  DERIVED SETTINGS AND COLOUR PRESETS
+# ═══════════════════════════════════════════════════════════════
+os.makedirs(plotdir, exist_ok=True)
+
+if switch_pozzuoli:
+    minlon, maxlon = 14.07, 14.175
+    minlat, maxlat = 40.79,  40.845
+    map_name = 'pozzuoli'
+else:
+    minlon, maxlon = 14.07, 14.175
+    minlat, maxlat = 40.775, 40.855
+    map_name = 'gulf'
+
+region     = [minlon, maxlon, minlat, maxlat]
+projection = f"M{MAP_WIDTH_IN}i"
+map_w_cm   = MAP_WIDTH_IN * 2.54
 
 _TOPO_PRESETS = {
     'gray':  ('gray',               True),   # (GMT cmap, reverse)
@@ -42,16 +219,6 @@ _TOPO_PRESETS = {
     'green': ('honeydew,olivedrab', False),  # light mint → olive
     'sand':  ('ivory,tan',          False),  # pale ivory → warm tan
 }
-
-#   'depth_color' → colour gradient by depth (palette set by meca_color)
-#   'fixed'       → uniform fill set by fixed_color
-color_mode  = 'depth_color'
-fixed_color = '#606060'
-
-# Focal mechanism colour palette (only used when color_mode == 'depth_color').
-#   'gray' | 'blue' | 'red' | 'green' | 'brown' | 'purple'
-# Or pass a custom (light_rgb, dark_rgb) tuple, e.g. meca_color = ((255,235,205),(139,69,19))
-meca_color = 'red'
 
 _MECA_PRESETS = {
     'gray':   ((205, 205, 205), (50,  50,  50)),    # shallow → deep
@@ -63,66 +230,11 @@ _MECA_PRESETS = {
     'black':  ((255, 255, 255), (0,   0,   0)),
 }
 
-switch_deviatoric = True
-switch_timestamps = False
-switch_sta_names  = False
-
-switch_pozzuoli = False
-if switch_pozzuoli:
-    minlon, maxlon = 14.07, 14.175
-    minlat, maxlat = 40.79,  40.845
-    map_name = 'pozzuoli'
-else:
-    minlon, maxlon = 14.07, 14.175
-    minlat, maxlat = 40.775, 40.855
-    map_name = 'gulf'
-
-region     = [minlon, maxlon, minlat, maxlat]
-projection = "M6i"
-
-# ═══════════════════════════════════════════════════════════════
-#  UNCERTAINTY ELLIPSES — STYLE SETTINGS
-#  Ellipses are drawn BEFORE the beach balls, so they stay underneath.
-# ═══════════════════════════════════════════════════════════════
-
-# Display mode:
-#   'outline' → dashed border only            (option 1)
-#   'filled'  → semi-transparent solid fill   (option 2)
-#   'both'    → transparent fill + dashed border
-#   'none'    → ellipses switched off
-ELLIPSE_MODE = 'filled'
-
-# ───────────────────────────────────────────────────────────────
-#  ↓↓↓  ELLIPSE COLOUR — CHANGE IT HERE  ↓↓↓
-#  Any GMT colour: 'gray40', 'black', '#BD2025', '255/0/0' …
-#  Special value 'depth' → each ellipse takes the same depth colour
-#                          as its own beach ball.
-ELLIPSE_COLOR = 'gray40'
-#  ↑↑↑  ELLIPSE COLOUR — CHANGE IT HERE  ↑↑↑
-# ───────────────────────────────────────────────────────────────
-
-# ───────────────────────────────────────────────────────────────
-#  ↓↓↓  FILL TRANSPARENCY — CHANGE IT HERE  ↓↓↓
-#  0   = fully opaque       (overlaps hide each other)
-#  100 = fully transparent  (invisible)
-#  70–85 works well when many ellipses overlap.
-ELLIPSE_ALPHA = 80
-#  ↑↑↑  FILL TRANSPARENCY — CHANGE IT HERE  ↑↑↑
-# ───────────────────────────────────────────────────────────────
-
-ELLIPSE_PEN_WIDTH = '0.8p'      # border thickness
-ELLIPSE_DASH      = '4p_3p'     # dash pattern: 'solid' for a continuous line
-ELLIPSE_N_POINTS  = 400         # points used to trace each ellipse
-ELLIPSE_FILE_NAME = 'uncertainty_ellipses.txt'
-
-# Reference ("mean") ellipse drawn in the bottom-left corner as a size legend.
-switch_mean_ellipse     = True
-MEAN_ELLIPSE_OFFSET_LON = 0.015   # degrees from minlon
-MEAN_ELLIPSE_OFFSET_LAT = 0.015   # degrees from minlat
+MECA_EXPONENT = 1     # exponent field of the 'mt' spec — see meca_diameter_cm()
 
 
 # ═══════════════════════════════════════════════════════════════
-#  LOAD CATALOGUE
+#  LOAD CATALOGUES
 # ═══════════════════════════════════════════════════════════════
 fm_events = model.load_events(os.path.join(catdir, filename + '.pf'))
 fm_events = [ev for ev in fm_events if ev.moment_tensor is not None]
@@ -131,11 +243,127 @@ depths_km = np.array([ev.depth / 1000 for ev in fm_events])
 depth_min = max(0.0, depths_km.min() - 1.0)
 depth_max = depths_km.max() + 1.0
 
+vt_events = []
+if switch_vt_circles:
+    vt_events = model.load_events(os.path.join(catdir, VT_FILE_NAME))
+    vt_events = [ev for ev in vt_events if ev.magnitude is not None]
+    # big first, so small circles stay visible on top of large ones
+    vt_events.sort(key=lambda ev: ev.magnitude, reverse=True)
+
 
 # ═══════════════════════════════════════════════════════════════
-#  LOAD UNCERTAINTY ELLIPSES
-#  columns: event_name lat_ref lon_ref east_16 east_84 north_16 north_84
-#           (shifts in metres, relative to lat_ref/lon_ref)
+#  DEPTH → COLOUR  (pure Python, independent of GMT CPT state)
+#  shallow → light tone, deep → dark tone (palette set by meca_color)
+# ═══════════════════════════════════════════════════════════════
+def depth_to_color(depth_km):
+    light, dark = meca_color if isinstance(meca_color, tuple) \
+        else _MECA_PRESETS.get(meca_color, _MECA_PRESETS['gray'])
+    t = np.clip((depth_km - depth_min) / (depth_max - depth_min), 0.0, 1.0)
+    rgb = [round(light[i] + t * (dark[i] - light[i])) for i in range(3)]
+    return f"{rgb[0]}/{rgb[1]}/{rgb[2]}"
+
+
+# ═══════════════════════════════════════════════════════════════
+#  MAGNITUDE → GMT `scale` PARAMETER
+#  NOTE: this is NOT the size drawn on paper. GMT's -S option treats
+#  `scale` as the diameter of a magnitude-5 beach ball and shrinks it
+#  linearly with magnitude — see meca_diameter_cm() below.
+# ═══════════════════════════════════════════════════════════════
+def mag_to_size(mag):
+    return 1.0 + 0.10 * mag
+
+
+# ═══════════════════════════════════════════════════════════════
+#  MOMENT TENSOR → GMT meca SPEC
+# ═══════════════════════════════════════════════════════════════
+def meca_spec(ev):
+    """Return (spec_dict, convention) for fig.meca()."""
+    if switch_deviatoric:
+        msix = pmt.to6(ev.moment_tensor.m_up_south_east())
+        spec = {
+            "mrr": msix[0] * 1e7, "mtt": msix[1] * 1e7, "mff": msix[2] * 1e7,
+            "mrt": msix[3] * 1e7, "mrf": msix[4] * 1e7, "mtf": msix[5] * 1e7,
+            "exponent": MECA_EXPONENT,
+        }
+        return spec, 'mt'
+
+    spec = {
+        "strike":    ev.moment_tensor.strike1,
+        "dip":       ev.moment_tensor.dip1,
+        "rake":      ev.moment_tensor.rake1,
+        "magnitude": ev.magnitude,
+    }
+    return spec, 'aki'
+
+
+# ═══════════════════════════════════════════════════════════════
+#  MAGNITUDE → DIAMETER ACTUALLY DRAWN ON PAPER (cm)
+#
+#  GMT draws a beach ball whose diameter is  scale * Mw / 5 , i.e. `scale`
+#  is the diameter at Mw 5 and the size is linear in magnitude (verified by
+#  rendering and measuring: aki, scale=1c → 0.203/0.402/0.605/0.804 cm for
+#  Mw 1/2/3/4).
+#
+#  With convention='mt' GMT does not read a magnitude, it derives one from
+#  the tensor it is handed:  Mw_gmt = (log10(M0[dyne-cm]) - 16.1) / 1.5.
+#  The spec passes full dyne-cm values together with exponent=1, so GMT sees
+#  a moment 10x the true one and every beach ball comes out ~0.635 magnitude
+#  units too big (a constant +0.13*scale cm — uniform, so relative sizes stay
+#  correct). This function reproduces that chain exactly, so the legend shows
+#  the size a given Mw really gets on the map.
+# ═══════════════════════════════════════════════════════════════
+def meca_diameter_cm(mag):
+    if switch_deviatoric:
+        m0_dyne_cm = pmt.magnitude_to_moment(mag) * 1e7 * 10 ** MECA_EXPONENT
+        mag_gmt = (np.log10(m0_dyne_cm) - 16.1) / 1.5
+    else:
+        mag_gmt = mag
+    return mag_to_size(mag) * mag_gmt / 5.0
+
+
+# ═══════════════════════════════════════════════════════════════
+#  VT CIRCLES
+# ═══════════════════════════════════════════════════════════════
+def vt_diameter_cm(mag):
+    """Circle diameter on paper (cm) for a VT event of magnitude `mag`."""
+    if VT_SIZE_MODE == 'meca':
+        diam = meca_diameter_cm(mag)
+    else:                                    # 'linear'
+        diam = VT_SIZE_BASE_CM + VT_SIZE_SLOPE_CM * mag
+    return max(VT_SIZE_FACTOR * diam, 0.01)  # never let a circle vanish
+
+
+def draw_vt_circles(events):
+    """One circle per event, radius scaling with magnitude (VT_* settings)."""
+    fill = None if VT_MODE == 'outline' else VT_COLOR
+    pen = None
+    if VT_MODE == 'outline':
+        pen = f"{VT_PEN_WIDTH},{VT_COLOR}"
+    elif VT_MODE == 'both':
+        pen = f"{VT_PEN_WIDTH},{VT_PEN_COLOR}"
+
+    for ev in events:
+        fig.plot(
+            x=ev.lon, y=ev.lat,
+            style=f"c{vt_diameter_cm(ev.magnitude):.3f}c",
+            fill=fill, pen=pen, transparency=VT_ALPHA,
+            region=region, projection=projection,
+        )
+
+    if events:
+        mags = [ev.magnitude for ev in events]
+        print(f"[INFO] VT circles plotted          : {len(events)} "
+              f"(Mw {min(mags):.2f} – {max(mags):.2f}, "
+              f"{vt_diameter_cm(min(mags)):.2f} – "
+              f"{vt_diameter_cm(max(mags)):.2f} cm)")
+    else:
+        print(f"[WARNING] no VT event with a magnitude in {VT_FILE_NAME}")
+
+
+# ═══════════════════════════════════════════════════════════════
+#  UNCERTAINTY ELLIPSES
+#  File columns: event_name lat_ref lon_ref east_16 east_84 north_16 north_84
+#                (shifts in metres, relative to lat_ref/lon_ref)
 # ═══════════════════════════════════════════════════════════════
 def load_ellipses(filepath):
     """Return {event_name: {lat_ref, lon_ref, e16, e84, n16, n84}}."""
@@ -205,85 +433,12 @@ def draw_ellipse(lons, lats, color):
                  region=region, projection=projection)
 
 
-# ═══════════════════════════════════════════════════════════════
-#  DEPTH → COLOUR  (pure Python, independent of GMT CPT state)
-#  shallow → light tone,  deep → dark tone  (palette set by meca_color)
-# ═══════════════════════════════════════════════════════════════
-def depth_to_color(depth_km):
-    light, dark = meca_color if isinstance(meca_color, tuple) \
-        else _MECA_PRESETS.get(meca_color, _MECA_PRESETS['gray'])
-    t = np.clip((depth_km - depth_min) / (depth_max - depth_min), 0.0, 1.0)
-    rgb = [round(light[i] + t * (dark[i] - light[i])) for i in range(3)]
-    return f"{rgb[0]}/{rgb[1]}/{rgb[2]}"
-
-
 def ellipse_color_for(ev):
     """Resolve ELLIPSE_COLOR for a given event ('depth' → beach-ball colour)."""
     if ELLIPSE_COLOR == 'depth':
         return depth_to_color(ev.depth / 1000) if color_mode == 'depth_color' \
             else fixed_color
     return ELLIPSE_COLOR
-
-
-# ═══════════════════════════════════════════════════════════════
-#  MAGNITUDE → GMT `scale` PARAMETER
-#  NOTE: this is NOT the size drawn on paper. GMT's -S option treats
-#  `scale` as the diameter of a magnitude-5 beach ball and shrinks it
-#  linearly with magnitude — see meca_diameter_cm() below.
-# ═══════════════════════════════════════════════════════════════
-def mag_to_size(mag):
-    return 1.0 + 0.10 * mag
-
-
-# ═══════════════════════════════════════════════════════════════
-#  MOMENT TENSOR → GMT meca SPEC
-# ═══════════════════════════════════════════════════════════════
-MECA_EXPONENT = 1     # exponent field of the 'mt' spec — see meca_diameter_cm()
-
-
-def meca_spec(ev):
-    """Return (spec_dict, convention) for fig.meca()."""
-    if switch_deviatoric:
-        msix = pmt.to6(ev.moment_tensor.m_up_south_east())
-        spec = {
-            "mrr": msix[0] * 1e7, "mtt": msix[1] * 1e7, "mff": msix[2] * 1e7,
-            "mrt": msix[3] * 1e7, "mrf": msix[4] * 1e7, "mtf": msix[5] * 1e7,
-            "exponent": MECA_EXPONENT,
-        }
-        return spec, 'mt'
-
-    spec = {
-        "strike":    ev.moment_tensor.strike1,
-        "dip":       ev.moment_tensor.dip1,
-        "rake":      ev.moment_tensor.rake1,
-        "magnitude": ev.magnitude,
-    }
-    return spec, 'aki'
-
-
-# ═══════════════════════════════════════════════════════════════
-#  MAGNITUDE → DIAMETER ACTUALLY DRAWN ON PAPER (cm)
-#
-#  GMT draws a beach ball whose diameter is  scale * Mw / 5 , i.e. `scale`
-#  is the diameter at Mw 5 and the size is linear in magnitude (verified by
-#  rendering and measuring: aki, scale=1c → 0.203/0.402/0.605/0.804 cm for
-#  Mw 1/2/3/4).
-#
-#  With convention='mt' GMT does not read a magnitude, it derives one from
-#  the tensor it is handed:  Mw_gmt = (log10(M0[dyne-cm]) - 16.1) / 1.5.
-#  The spec passes full dyne-cm values together with exponent=1, so GMT sees
-#  a moment 10x the true one and every beach ball comes out ~0.635 magnitude
-#  units too big (a constant +0.13*scale cm — uniform, so relative sizes stay
-#  correct). This function reproduces that chain exactly, so the legend shows
-#  the size a given Mw really gets on the map.
-# ═══════════════════════════════════════════════════════════════
-def meca_diameter_cm(mag):
-    if switch_deviatoric:
-        m0_dyne_cm = pmt.magnitude_to_moment(mag) * 1e7 * 10 ** MECA_EXPONENT
-        mag_gmt = (np.log10(m0_dyne_cm) - 16.1) / 1.5
-    else:
-        mag_gmt = mag
-    return mag_to_size(mag) * mag_gmt / 5.0
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -331,7 +486,7 @@ else:   # identical to original script 11
     fig.coast(shorelines="1/0.5p,black", resolution="f", water="#EBEBEE")
 
 # ═══════════════════════════════════════════════════════════════
-#  UNCERTAINTY ELLIPSES  (drawn first → below the beach balls)
+#  UNCERTAINTY ELLIPSES  (drawn first → below everything else)
 # ═══════════════════════════════════════════════════════════════
 all_semi_a_m, all_semi_b_m = [], []
 missing = []
@@ -391,6 +546,12 @@ if ELLIPSE_MODE != 'none':
             )
 
 # ═══════════════════════════════════════════════════════════════
+#  VT CIRCLES  (below the beach balls unless VT_ON_TOP)
+# ═══════════════════════════════════════════════════════════════
+if switch_vt_circles and not VT_ON_TOP:
+    draw_vt_circles(vt_events)
+
+# ═══════════════════════════════════════════════════════════════
 #  FOCAL MECHANISMS
 #  compressionfill is computed from depth in Python — no GMT CPT needed.
 # ═══════════════════════════════════════════════════════════════
@@ -413,75 +574,147 @@ for ev in fm_events:
         fig.text(text=label, x=ev.lon, y=ev.lat + 0.001,
                  font="4p,Helvetica,black", justify="CM")
 
-# ═══════════════════════════════════════════════════════════════
-#  MAGNITUDE LEGEND  — compact horizontal, top-left
-#  Circle diameters = meca_diameter_cm(), i.e. exactly the size the beach
-#  balls get on the map. The whole layout is worked out in cm and converted
-#  to degrees at the end, so the box always fits its content.
-# ═══════════════════════════════════════════════════════════════
-ref_mags = [1.0, 2.0, 3.0]
+if switch_vt_circles and VT_ON_TOP:
+    draw_vt_circles(vt_events)
 
-LEG_PAD      = 0.16    # cm — inner padding of the box
-LEG_GAP      = 0.20    # cm — clear space between two circles
-LEG_MIN_STEP = 0.62    # cm — min centre-to-centre distance (keeps labels apart)
-LEG_TITLE_H  = 0.34    # cm — row reserved for the "Mag" title
-LEG_LABEL_H  = 0.32    # cm — row reserved for the labels under the circles
-LEG_FONT_TITLE = "5p,Helvetica-Bold,black"
-LEG_FONT_LABEL = "4.5p,Helvetica,black"
-LEG_MARGIN     = 0.10  # cm — distance from the map frame
-
+# ═══════════════════════════════════════════════════════════════
+#  LEGEND — compact box, top-left
+#  Stacked magnitude scales (beach balls and/or VT circles), each one a title
+#  row + a row of circles + a row of labels, then the station symbol. Every
+#  circle has the diameter its own symbol really gets on the map. The layout
+#  is worked out in cm and converted to degrees at the end, so the box always
+#  fits its content.
+# ═══════════════════════════════════════════════════════════════
 # cm → degrees. Mercator: 1 cm of latitude spans cos(lat) times the
 # longitude span of 1 cm.
-map_w_cm       = 6 * 2.54                       # projection is M6i
 deg_lon_per_cm = (maxlon - minlon) / map_w_cm
 deg_lat_per_cm = deg_lon_per_cm * np.cos(np.radians((minlat + maxlat) / 2))
 
-ref_diams = [meca_diameter_cm(m) for m in ref_mags]
 
-# circle centres, in cm from the inner left edge of the box
-xs_cm = []
-x_cm  = ref_diams[0] / 2.0
-for i, d in enumerate(ref_diams):
-    if i > 0:
-        x_cm += max(ref_diams[i - 1] / 2.0 + LEG_GAP + d / 2.0, LEG_MIN_STEP)
-    xs_cm.append(x_cm)
+def text_width_cm(text, font):
+    """Rough width of a label (cm), from the point size in a GMT font string."""
+    pt = float(font.split('p,')[0])
+    return len(text) * 0.5 * pt * 2.54 / 72.0
 
-box_w_cm = xs_cm[-1] + ref_diams[-1] / 2.0 + 2 * LEG_PAD
-box_h_cm = LEG_TITLE_H + max(ref_diams) + LEG_LABEL_H + 2 * LEG_PAD
 
-box_x0 = minlon + LEG_MARGIN * deg_lon_per_cm
-box_y1 = maxlat - LEG_MARGIN * deg_lat_per_cm          # top edge
-box_y0 = box_y1 - box_h_cm * deg_lat_per_cm            # bottom edge
-box_w  = box_w_cm * deg_lon_per_cm
+def symbol_size_cm(style):
+    """Size of a GMT symbol string such as 't0.3c' → 0.3 cm."""
+    try:
+        return float(style[1:].rstrip('c'))
+    except ValueError:
+        return 0.3
 
-fig.plot(
-    x=[box_x0, box_x0 + box_w, box_x0 + box_w, box_x0],
-    y=[box_y0, box_y0, box_y1, box_y1],
-    close=True, pen="0.4p,gray50", fill="white@20",
-)
 
-y_title = box_y1 - (LEG_PAD + LEG_TITLE_H / 2.0) * deg_lat_per_cm
-y_circ  = box_y1 - (LEG_PAD + LEG_TITLE_H + max(ref_diams) / 2.0) * deg_lat_per_cm
-y_label = box_y0 + (LEG_PAD + LEG_LABEL_H / 2.0) * deg_lat_per_cm
+def mag_scale(title, mags, diam_fn, fill, pen):
+    """
+    Lay out one magnitude scale.
 
-fig.text(text="Mag", x=box_x0 + box_w / 2.0, y=y_title,
-         font=LEG_FONT_TITLE, justify="CM")
+    Returns a dict with the circle diameters, their centres in cm from the
+    left edge of the row, the row width and the total height of the block.
+    """
+    diams = [diam_fn(m) for m in mags]
 
-legend_fill = depth_to_color((depth_min + depth_max) / 2) \
-    if color_mode == 'depth_color' else fixed_color
+    xs_cm, x_cm = [], diams[0] / 2.0
+    for i, d in enumerate(diams):
+        if i > 0:
+            x_cm += max(diams[i - 1] / 2.0 + LEG_GAP + d / 2.0, LEG_MIN_STEP)
+        xs_cm.append(x_cm)
 
-for rm, d_cm, cx_cm in zip(ref_mags, ref_diams, xs_cm):
-    xc = box_x0 + (LEG_PAD + cx_cm) * deg_lon_per_cm
-    fig.plot(x=xc, y=y_circ, style=f"c{d_cm:.3f}c",
-             fill=legend_fill, pen="0.4p,black")
-    fig.text(text=f"{int(rm)} Mw", x=xc, y=y_label,
-             font=LEG_FONT_LABEL, justify="CM")
+    return {
+        'title':  title,
+        'mags':   mags,
+        'diams':  diams,
+        'xs_cm':  xs_cm,
+        'fill':   fill,
+        'pen':    pen,
+        'w_cm':   xs_cm[-1] + diams[-1] / 2.0,
+        'h_cm':   LEG_TITLE_H + max(diams) + LEG_LABEL_H,
+    }
+
+
+# --- collect the scales to draw -------------------------------------------
+scales = []
+
+if LEG_SHOW_MECA:
+    meca_fill = depth_to_color((depth_min + depth_max) / 2) \
+        if color_mode == 'depth_color' else fixed_color
+    scales.append(mag_scale(LEG_MECA_TITLE, ref_mags_meca, meca_diameter_cm,
+                            meca_fill, "0.4p,black"))
+
+if LEG_SHOW_VT and switch_vt_circles:
+    vt_leg_fill = None if VT_MODE == 'outline' else VT_COLOR
+    if VT_MODE == 'outline':
+        vt_leg_pen = f"{VT_PEN_WIDTH},{VT_COLOR}"
+    elif VT_MODE == 'both':
+        vt_leg_pen = f"{VT_PEN_WIDTH},{VT_PEN_COLOR}"
+    else:
+        vt_leg_pen = None
+    scales.append(mag_scale(LEG_VT_TITLE, ref_mags_vt, vt_diameter_cm,
+                            vt_leg_fill, vt_leg_pen))
+
+# --- box geometry (cm) ----------------------------------------------------
+sta_size_cm  = symbol_size_cm(STA_STYLE)
+sta_row_w_cm = 0.0
+if LEG_SHOW_STATION:
+    sta_row_w_cm = (sta_size_cm + LEG_SYM_GAP
+                    + text_width_cm(LEG_STATION_LABEL, LEG_FONT_LABEL))
+
+if scales or LEG_SHOW_STATION:
+    box_w_cm = max([sc['w_cm'] for sc in scales] + [sta_row_w_cm]) + 2 * LEG_PAD
+    box_h_cm = (sum(sc['h_cm'] for sc in scales)
+                + (LEG_STATION_H if LEG_SHOW_STATION else 0.0) + 2 * LEG_PAD)
+
+    box_x0 = minlon + LEG_MARGIN * deg_lon_per_cm
+    box_y1 = maxlat - LEG_MARGIN * deg_lat_per_cm      # top edge
+    box_y0 = box_y1 - box_h_cm * deg_lat_per_cm        # bottom edge
+    box_w  = box_w_cm * deg_lon_per_cm
+
+    fig.plot(
+        x=[box_x0, box_x0 + box_w, box_x0 + box_w, box_x0],
+        y=[box_y0, box_y0, box_y1, box_y1],
+        close=True, pen="0.4p,gray50", fill="white@20",
+    )
+
+    def leg_y(depth_cm):
+        """Latitude of a point `depth_cm` below the top edge of the box."""
+        return box_y1 - depth_cm * deg_lat_per_cm
+
+    # --- one block per magnitude scale, stacked top to bottom -------------
+    cur_cm = LEG_PAD
+    for sc in scales:
+        max_d = max(sc['diams'])
+        y_title = leg_y(cur_cm + LEG_TITLE_H / 2.0)
+        y_circ  = leg_y(cur_cm + LEG_TITLE_H + max_d / 2.0)
+        y_label = leg_y(cur_cm + LEG_TITLE_H + max_d + LEG_LABEL_H / 2.0)
+
+        fig.text(text=sc['title'], x=box_x0 + box_w / 2.0, y=y_title,
+                 font=LEG_FONT_TITLE, justify="CM")
+
+        row_x0_cm = (box_w_cm - sc['w_cm']) / 2.0      # centre the row
+        for mag, d_cm, cx_cm in zip(sc['mags'], sc['diams'], sc['xs_cm']):
+            xc = box_x0 + (row_x0_cm + cx_cm) * deg_lon_per_cm
+            fig.plot(x=xc, y=y_circ, style=f"c{d_cm:.3f}c",
+                     fill=sc['fill'], pen=sc['pen'])
+            fig.text(text=f"{mag:g} Mw", x=xc, y=y_label,
+                     font=LEG_FONT_LABEL, justify="CM")
+
+        cur_cm += sc['h_cm']
+
+    # --- station symbol + label -------------------------------------------
+    if LEG_SHOW_STATION:
+        y_sta     = leg_y(cur_cm + LEG_STATION_H / 2.0)
+        sta_x0_cm = (box_w_cm - sta_row_w_cm) / 2.0
+        fig.plot(x=box_x0 + (sta_x0_cm + sta_size_cm / 2.0) * deg_lon_per_cm,
+                 y=y_sta, style=STA_STYLE, fill=STA_FILL, pen=STA_PEN)
+        fig.text(text=LEG_STATION_LABEL,
+                 x=box_x0 + (sta_x0_cm + sta_size_cm + LEG_SYM_GAP) * deg_lon_per_cm,
+                 y=y_sta, font=LEG_FONT_LABEL, justify="LM")
 
 # ═══════════════════════════════════════════════════════════════
 #  STATIONS
 # ═══════════════════════════════════════════════════════════════
 latsta, lonsta, namsta = [], [], []
-with open(os.path.join(metadatadir, 'stations_flegrei_INGV_final.pf')) as f:
+with open(os.path.join(metadatadir, STATION_FILE)) as f:
     for line in f:
         if line[0] == ' ':
             continue
@@ -492,7 +725,7 @@ with open(os.path.join(metadatadir, 'stations_flegrei_INGV_final.pf')) as f:
 latsta = np.array(latsta)
 lonsta = np.array(lonsta)
 
-fig.plot(x=lonsta, y=latsta, style="t0.3c", fill="#FFCC4E", pen="0.6p,black")
+fig.plot(x=lonsta, y=latsta, style=STA_STYLE, fill=STA_FILL, pen=STA_PEN)
 if switch_sta_names:
     fig.text(x=lonsta + 0.002, y=latsta + 0.001, text=namsta,
              justify='BL', font='5p,Helvetica,black')
@@ -511,7 +744,6 @@ if color_mode == 'depth_color':
     cb_h   = 0.45   # colorbar strip height (cm)
     n_grad = 200    # gradient steps
 
-    # map_w_cm (M6i = 15.24 cm) is defined in the legend block above
     x_shift = (map_w_cm - cb_w) / 2    # left edge of colorbar from map origin
 
     # y_shift: distance from map bottom frame to bottom of colorbar strip
@@ -562,7 +794,8 @@ if color_mode == 'depth_color':
 # ═══════════════════════════════════════════════════════════════
 suffix   = 'deviatoric' if switch_deviatoric else 'dc'
 ell_tag  = '' if ELLIPSE_MODE == 'none' else f"_ell-{ELLIPSE_MODE}"
-outpath  = os.path.join(plotdir, f"{filename}_{suffix}{ell_tag}_{map_name}.pdf")
+vt_tag   = '_vt' if switch_vt_circles else ''
+outpath  = os.path.join(plotdir, f"{filename}_{suffix}{ell_tag}{vt_tag}_{map_name}.pdf")
 fig.show()
 fig.savefig(outpath)
 print(f"Saved: {outpath}")
