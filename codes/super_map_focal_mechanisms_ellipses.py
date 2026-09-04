@@ -150,7 +150,7 @@ MEAN_ELLIPSE_OFFSET_LAT = 0.015   # degrees from minlat
 # ═══════════════════════════════════════════════════════════════
 #  7 · ANNOTATIONS
 # ═══════════════════════════════════════════════════════════════
-switch_timestamps = False    # date/time label next to every beach ball
+switch_timestamps = True    # date/time label next to every beach ball
 switch_sta_names  = False    # station code next to every station triangle
 
 # ═══════════════════════════════════════════════════════════════

@@ -4,7 +4,9 @@ runs/*
 GF_STORES/*
 DATA/*
 DATA_RESPONSE/*
-DATA_iso/*
+DATA_FILT/*
+LOKI/*
+LOKI.zip
 PLOTS/*
 .github/*
 .vscode/*
