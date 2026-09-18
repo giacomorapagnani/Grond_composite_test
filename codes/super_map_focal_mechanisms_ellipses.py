@@ -127,7 +127,7 @@ VT_ON_TOP = False
 #   'filled'  → semi-transparent solid fill
 #   'both'    → transparent fill + dashed border
 #   'none'    → ellipses switched off
-ELLIPSE_MODE = 'none'
+ELLIPSE_MODE = 'filled'
 
 # Any GMT colour ('gray40', 'black', '#BD2025', '255/0/0' …).
 # Special value 'depth' → each ellipse takes the depth colour of its beach ball.
@@ -150,7 +150,7 @@ MEAN_ELLIPSE_OFFSET_LAT = 0.015   # degrees from minlat
 # ═══════════════════════════════════════════════════════════════
 #  7 · ANNOTATIONS
 # ═══════════════════════════════════════════════════════════════
-switch_timestamps = True    # date/time label next to every beach ball
+switch_timestamps = False    # date/time label next to every beach ball
 switch_sta_names  = False    # station code next to every station triangle
 
 # ═══════════════════════════════════════════════════════════════
