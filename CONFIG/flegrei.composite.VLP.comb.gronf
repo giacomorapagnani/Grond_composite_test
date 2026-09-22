@@ -1,7 +1,7 @@
 %YAML 1.1
-# Composite Grond Config:
+# Composite Grond Config: synthetic event: flegrei_2023_06_11_06_44_25
 # VT
-# (fixed hypocentre and time)
+# (~fixed hypocentre and time)
 # VLP (same as in main article)
   # td.near: 0.09-0.12 Hz
   # fd.near: 0.09-0.12  Hz
@@ -75,11 +75,11 @@ problem_config: !grond.CompositeProblemConfig
     mt_type: deviatoric
     mt_random: uniform
     ranges:
-      depth: 3554 .. 3554
+      depth: 3500 .. 3600
       duration: 0.1 .. 0.1
-      east_shift: -450 .. -450
+      east_shift: -500 .. -400
       magnitude: 1. .. 4.
-      north_shift: 750 .. 750
+      north_shift: 700 .. 800
       rmdd: -1.5708 .. 1.5708
       rmed: -1 .. 1
       rmee: -1.5708 .. 1.5708
@@ -111,15 +111,15 @@ problem_config: !grond.CompositeProblemConfig
       
 analyser_configs:
 - !grond.TargetBalancingAnalyserConfig
-  niterations: 2000
+  niterations: 5000
   use_reference_magnitude: false
 optimiser_config: !grond.HighScoreOptimiserConfig
   sampler_phases:
   - !grond.UniformSamplerPhase
-    niterations: 20000
+    niterations: 50000
     ntries_preconstrain_limit: 1000
   - !grond.DirectedSamplerPhase
-    niterations: 100000
+    niterations: 500000
     ntries_preconstrain_limit: 1000
     starting_point: excentricity_compensated
     sampler_distribution: normal
